@@ -102,7 +102,7 @@ dependencies {
 
     // Glide
     implementation(libs.glide)
-    kapt(libs.glide.compiler) // annotationProcessor에서 kapt로 변경
+    ksp(libs.glide.compiler) // annotationProcessor에서 kapt로 변경
 
     // coil
     implementation(libs.coil)
