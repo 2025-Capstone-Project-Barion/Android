@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
             BarrionTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "A222",
+                        name = "A222fpjqwfjiqwif",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
