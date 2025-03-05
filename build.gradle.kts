@@ -12,4 +12,5 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.hilt.android) apply false
     alias(libs.plugins.navigation.safeargs.kotlin) apply false
+    // ktlint 플러그인 제거
 }

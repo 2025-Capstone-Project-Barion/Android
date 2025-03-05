@@ -7,10 +7,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.ktlint)
+    // ktlint 플러그인 제거
     alias(libs.plugins.navigation.safeargs.kotlin)
     id("org.jetbrains.kotlin.kapt")
-
 }
 
 val properties =
@@ -103,16 +102,13 @@ dependencies {
 
     // Glide
     implementation(libs.glide)
-    annotationProcessor(libs.glide.compiler)
+    kapt(libs.glide.compiler) // annotationProcessor에서 kapt로 변경
 
     // coil
     implementation(libs.coil)
 
     // ViewPager2
     implementation(libs.androidx.viewpager2)
-
-    // Coil
-    // implementation(libs.coil.compose)
 
     // navigation
     implementation(libs.bundles.navigation)
@@ -129,5 +125,4 @@ dependencies {
 
     // splashscreen
     implementation(libs.core.splashscreen)
-
 }
