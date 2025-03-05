@@ -1,8 +1,7 @@
 # Built application files
 *.apk
-*.aab
+*.aab    # 이 라인만 유지
 *.ap_
-*.aab
 
 # Files for the ART/Dalvik VM
 *.dex

@@ -20,7 +20,7 @@ val properties =
 
 android {
     namespace = "com.example.barrion"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.barrion"
