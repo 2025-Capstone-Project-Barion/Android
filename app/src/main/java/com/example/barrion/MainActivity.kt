@@ -14,7 +14,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.barrion.ui.theme.BarrionTheme
 
 
-//test
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +30,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-//test12
+
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
