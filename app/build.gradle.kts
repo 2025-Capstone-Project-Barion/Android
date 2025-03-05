@@ -1,8 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.navigation.safeargs.kotlin)
+    id("org.jetbrains.kotlin.kapt")
+
 }
+
+val properties =
+    Properties().apply {
+        load(project.rootProject.file("local.properties").inputStream())
+    }
 
 android {
     namespace = "com.example.barrion"
@@ -35,6 +49,11 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
+        viewBinding = true
+        dataBinding = true
+        buildConfig = true
+    }
+    buildFeatures {
         compose = true
     }
 }
@@ -56,4 +75,59 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    implementation(libs.balloon)
+
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.constraintlayout)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+
+    implementation(libs.balloon)
+
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.datastore.preferences.core)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    ksp(libs.hilt.android.compiler)
+
+    // Timber
+    implementation(libs.timber)
+
+    // Glide
+    implementation(libs.glide)
+    annotationProcessor(libs.glide.compiler)
+
+    // coil
+    implementation(libs.coil)
+
+    // ViewPager2
+    implementation(libs.androidx.viewpager2)
+
+    // Coil
+    // implementation(libs.coil.compose)
+
+    // navigation
+    implementation(libs.bundles.navigation)
+
+    // Kotlin Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines)
+
+    // Network
+    implementation(platform(libs.okhttp.bom))
+    implementation(libs.bundles.retrofit)
+
+    // splashscreen
+    implementation(libs.core.splashscreen)
+
 }
