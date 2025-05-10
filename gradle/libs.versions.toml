@@ -28,6 +28,7 @@ okhttp = "4.12.0"
 splashscreen = "1.0.1"
 moshi = "1.15.1"
 converter-moshi = "2.10.0"
+jetbrainsKotlinJvm = "2.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -85,6 +86,8 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 # ktlint 플러그인 제거
 navigation-safeargs-kotlin = { id = "androidx.navigation.safeargs.kotlin", version.ref = "navigation" }
+jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 
 [bundles]
 navigation = ["androidx-navigation-fragment-ktx", "androidx-navigation-ui-ktx"]
