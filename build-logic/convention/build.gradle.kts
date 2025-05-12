@@ -9,27 +9,22 @@ java {
 }
 
 dependencies {
+    // 버전 카탈로그를 사용한 의존성 추가
+    compileOnly(libs.android.gradlePlugin)
+    compileOnly(libs.kotlin.gradlePlugin)
+    compileOnly(libs.ksp.gradlePlugin)
 
-    compileOnly(libs.bundles.gradle.plugins)  // 모든 Gradle 플러그인 의존성을 한 번에 추가
-
-//    compileOnly(libs.android.gradle.plugin)
-//    compileOnly(libs.kotlin.gradle.plugin)
-//    compileOnly(libs.ksp.gradle.plugin)
-
+    // 만약 위 방법이 작동하지 않는다면, 하드코딩된 의존성 사용:
+    // compileOnly("com.android.tools.build:gradle:8.7.3")
+    // compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
+    // compileOnly("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:2.0.0-1.0.21")
 }
-gradlePlugin { // 플러그인 추가
+
+gradlePlugin {
     plugins {
-        create("androidApplication") {
+        register("androidApplication") {
             id = "barrion.android.application"
             implementationClass = "com.example.convention.AndroidApplicationConventionPlugin"
-        }
-        create("androidLibrary") {
-            id = "barrion.android.library"
-            implementationClass = "com.example.convention.AndroidLibraryConventionPlugin"
-        }
-        create("compose") {
-            id = "barrion.compose"
-            implementationClass = "com.example.convention.ComposeConventionPlugin"
         }
     }
 }

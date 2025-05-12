@@ -100,8 +100,10 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 # 커스텀 Convention 플러그인
 barrion-android-application = { id = "barrion.android.application", version = "unspecified" }
 barrion-android-library = { id = "barrion.android.library", version = "unspecified" }
-barrion-compose = { id = "barrion.compose", version = "unspecified" }
-
+barrion-android-compose = { id = "barrion.android.compose", version = "unspecified" }
+barrion-hilt = { id = "barrion.hilt", version = "unspecified" }
+barrion-network = { id = "barrion.network", version = "unspecified" }
+barrion-feature = { id = "barrion.feature", version = "unspecified" }
 
 [bundles]
 navigation = ["androidx-navigation-fragment-ktx", "androidx-navigation-ui-ktx"]
