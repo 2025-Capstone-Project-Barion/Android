@@ -1,22 +1,22 @@
 [versions]
 agp = "8.7.3"
 kotlin = "2.0.0"
-coreKtx = "1.15.0"
+coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.7"
+lifecycleRuntimeKtx = "2.9.0"
 activityCompose = "1.10.1"
-composeBom = "2025.02.00"
+composeBom = "2025.05.00"
 hilt = "2.55"
 ksp = "2.0.0-1.0.21"
-navigation = "2.8.8"
+navigation = "2.9.0"
 appcompat = "1.7.0"
 material = "1.12.0"
 activity = "1.10.1"
 constraintlayout = "2.2.1"
 balloon = "1.6.12"
-datastore = "1.1.3"
+datastore = "1.1.6"
 timber = "5.0.1"
 glide = "4.16.0"
 coil = "2.7.0"
@@ -28,6 +28,8 @@ okhttp = "4.12.0"
 splashscreen = "1.0.1"
 moshi = "1.15.1"
 converter-moshi = "2.10.0"
+jetbrainsKotlinJvm = "2.0.0"
+compose-compiler = "1.5.10"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -76,6 +78,12 @@ core-splashscreen = { group = "androidx.core", name = "core-splashscreen", versi
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation" }
 
+# gradle-plugins
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
@@ -83,9 +91,22 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+
 # ktlint 플러그인 제거
 navigation-safeargs-kotlin = { id = "androidx.navigation.safeargs.kotlin", version.ref = "navigation" }
+jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+
+# 커스텀 Convention 플러그인
+barrion-android-application = { id = "barrion.android.application", version = "unspecified" }
+barrion-android-library = { id = "barrion.android.library", version = "unspecified" }
+barrion-android-compose = { id = "barrion.android.compose", version = "unspecified" }
+barrion-hilt = { id = "barrion.hilt", version = "unspecified" }
+barrion-network = { id = "barrion.network", version = "unspecified" }
+barrion-feature = { id = "barrion.feature", version = "unspecified" }
 
 [bundles]
 navigation = ["androidx-navigation-fragment-ktx", "androidx-navigation-ui-ktx"]
 retrofit = ["retrofit-core", "retrofit-converter-kotlinx", "okhttp", "okhttp-logging", "moshi", "moshi-kotlin", "retrofit-converter-moshi"]
+
+gradle-plugins = ["android-gradlePlugin", "kotlin-gradlePlugin", "ksp-gradlePlugin"]
