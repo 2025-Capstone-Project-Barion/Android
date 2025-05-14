@@ -61,6 +61,10 @@ android {
 }
 
 dependencies {
+    // UI 모듈 의존성
+    implementation(project(":core:ui"))
+
+
     // 앱 특화 의존성만 추가 (플러그인에서 처리하지 않는 의존성)
     implementation(libs.balloon)
     implementation(libs.core.splashscreen)
