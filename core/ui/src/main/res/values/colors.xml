@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- main blue colors -->
+    <color name="blue_primary">#1335C9</color>
+    <color name="blue_secondary">#2142FF</color>
+    <color name="blue_tertiary">#4361FF</color>
+
+    <!-- blue variants -->
+    <color name="blue_dark">#0A1A5E</color>
+    <color name="blue_medium_dark">#0E2894</color>
+    <color name="blue_medium">#1335C9</color>
+    <color name="blue_bright">#2142FF</color>
+    <color name="blue_light">#4361FF</color>
+    <color name="blue_lighter">#637BFF</color>
+    <color name="blue_pale">#8395FF</color>
+    <color name="blue_very_pale">#A3AFFF</color>
+    <color name="blue_white">#E0E3FF</color>
+
+    <!-- gray colors -->
+    <color name="gray_black">#1A1A1A</color>
+    <color name="gray_very_dark">#2E2E33</color>
+    <color name="gray_dark">#474752</color>
+    <color name="gray_medium_dark">#5F5F70</color>
+    <color name="gray_medium">#9696A3</color>
+    <color name="gray_medium_light">#B2B2BC</color>
+    <color name="gray_light">#CDCDD5</color>
+    <color name="gray_very_light">#E8E8EC</color>
+    <color name="gray_white">#F4F4F6</color>
+
+</resources>

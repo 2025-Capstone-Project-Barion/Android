@@ -3,11 +3,11 @@ import java.util.Properties
 plugins {
     // 커스텀 플러그인 적용
     id("barrion.android.application")
-    id("barrion.android.application.compose") // 새로운 Compose 플러그인 사용
-    id("org.jetbrains.kotlin.plugin.compose") // Compose 컴파일러 플러그인 추가
-    id("barrion.hilt")                 // 의존성 주입
-    id("barrion.network")              // 네트워킹
-    id("barrion.imageloading")         // 이미지 로딩
+    id("barrion.android.application.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("barrion.hilt")
+    id("barrion.network")
+    id("barrion.imageloading")
 }
 
 val properties =
@@ -24,13 +24,21 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        // 리소스 최적화 설정
+        resourceConfigurations.addAll(listOf("en", "ko"))
     }
+
+    // 동적 기능 모듈 관련 설정 추가
+    // 온보딩 모듈이 동적 기능 모듈로 구성되어 있다면 사용
+    // dynamicFeatures += setOf(":feature:onboarding")
+
     buildFeatures {
         compose = true
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.10" // libs.versions.toml에 정의된 값 또는 직접 명시
+        kotlinCompilerExtensionVersion = "1.5.10"
     }
 
     buildTypes {
@@ -43,16 +51,15 @@ android {
         }
     }
 
-    // Java 버전 오버라이드 (플러그인에서 17 사용, 앱에서 11로 변경)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
 
-    // 빌드 기능 설정 (필요한 경우)
     buildFeatures {
         viewBinding = true
         dataBinding = true
@@ -61,16 +68,20 @@ android {
 }
 
 dependencies {
-    // 앱 특화 의존성만 추가 (플러그인에서 처리하지 않는 의존성)
+    // 기존 의존성 유지
+    implementation(project(":core:ui"))
+    implementation(project(":presentation"))
+    implementation(project(":feature:onboarding"))
+
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation(libs.balloon)
     implementation(libs.core.splashscreen)
 
-    // 테스트 의존성 (테스트 플러그인이 없는 경우)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
-
 
 //import java.util.Properties
 //

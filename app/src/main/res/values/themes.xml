@@ -1,5 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
+<!-- res/values/themes.xml -->
 <resources>
+    <!-- 기본 앱 테마 -->
+    <style name="Theme.Barrion" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 기본 테마 속성들... -->
+    </style>
 
-    <style name="Theme.Barrion" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- 스플래시 스크린 테마 -->
+    <style name="Theme.Barrion.Splash" parent="Theme.SplashScreen">
+        <!-- 스플래시 화면 배경색 -->
+        <item name="windowSplashScreenBackground">@color/Barrion</item>
+
+        <!-- 스플래시 화면 아이콘 -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+
+        <!-- 스플래시 화면이 사라진 후 사용할 테마 -->
+        <item name="postSplashScreenTheme">@style/Theme.Barrion</item>
+
+        <!-- 선택적: 브랜딩 이미지 (Android 12부터 지원) -->
+        <!-- <item name="windowSplashScreenBrandingImage">@drawable/branding</item> -->
+    </style>
 </resources>
