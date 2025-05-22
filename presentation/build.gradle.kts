@@ -1,43 +1,14 @@
-    plugins {
-        alias(libs.plugins.android.library)
-        alias(libs.plugins.kotlin.android)
-    }
+plugins {
+    id("barrion.android.feature")
+    // 필요에 따라 추가 플러그인 적용
+    id("barrion.hilt")
+    id("barrion.imageloading")
+}
 
-    android {
-        namespace = "com.example.presentation"
-        compileSdk = 34
+android {
+    namespace = "com.example.feature.auth" // 각 모듈에 맞는 네임스페이스 사용
+}
 
-        defaultConfig {
-            minSdk = 24
-
-            testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-            consumerProguardFiles("consumer-rules.pro")
-        }
-
-        buildTypes {
-            release {
-                isMinifyEnabled = false
-                proguardFiles(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
-                    "proguard-rules.pro"
-                )
-            }
-        }
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_11
-            targetCompatibility = JavaVersion.VERSION_11
-        }
-        kotlinOptions {
-            jvmTarget = "11"
-        }
-    }
-
-    dependencies {
-
-        implementation(libs.androidx.core.ktx)
-        implementation(libs.androidx.appcompat)
-        implementation(libs.material)
-        testImplementation(libs.junit)
-        androidTestImplementation(libs.androidx.junit)
-        androidTestImplementation(libs.androidx.espresso.core)
-    }
+dependencies {
+    // 모듈 특화 의존성만 추가
+}
