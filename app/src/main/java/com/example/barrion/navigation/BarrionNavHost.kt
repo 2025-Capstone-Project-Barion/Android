@@ -1,5 +1,4 @@
-// app/src/main/java/com/example/barrion/navigation/BarrionNavHost.kt
-
+// app/src/main/java/com/example/barrion/navigation/BarrionNavHost.kt (수정된 부분)
 package com.example.barrion.navigation
 
 import androidx.compose.foundation.layout.Box
@@ -12,17 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.auth.screen.LoginScreen
+import com.example.auth.screen.WelcomeScreen
 import com.example.onboarding.presentation.OnboardingScreen
 
 /**
  * 앱의 메인 네비게이션 호스트
- * 모든 화면 간의 이동을 관리합니다.
- *
- * @param navController 화면 전환을 위한 네비게이션 컨트롤러
  */
 @Composable
 fun BarrionNavHost(navController: NavHostController) {
-    // 앱의 모든 화면 간 네비게이션을 설정
     NavHost(
         navController = navController,
         startDestination = NavRoutes.Onboarding.route  // 시작 화면을 온보딩으로 설정
@@ -30,60 +27,52 @@ fun BarrionNavHost(navController: NavHostController) {
         // 온보딩 화면 라우트
         composable(route = NavRoutes.Onboarding.route) {
             OnboardingScreen(
-                onNavigateToHome = {
-                    // 홈 화면으로 이동하면서 온보딩 화면은 백스택에서 제거
-                    navController.navigate(NavRoutes.Home.route) {
+                onNavigateToLogin = {
+                    // Welcome 화면으로 이동하면서 온보딩 화면은 백스택에서 제거
+                    navController.navigate(NavRoutes.Welcome.route) {
                         popUpTo(NavRoutes.Onboarding.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        // 홈 화면 라우트 (메뉴 관리 화면)
-        composable(route = NavRoutes.Home.route) {
-            // 현재 구현 예정인 화면 - 구현 후 주석 해제
-            // MenuScreen(
-            //     onNavigateToOrder = { navController.navigate(NavRoutes.Order.route) },
-            //     onNavigateToSales = { navController.navigate(NavRoutes.Sales.route) },
-            //     onNavigateToStaff = { navController.navigate(NavRoutes.Staff.route) }
-            // )
+        // Welcome 화면 라우트 (새로 추가)
+        composable(route = NavRoutes.Welcome.route) {
+            WelcomeScreen(
+                onNavigateToLogin = {
+                    // 로그인 화면으로 이동
+                    navController.navigate(NavRoutes.Login.route)
+                }
+            )
+        }
 
-            // 임시로 개발 중 메시지 표시
+        // 로그인 화면 라우트
+        composable(route = NavRoutes.Login.route) {
+            LoginScreen(
+                onNavigateToHome = {
+                    // 홈 화면으로 이동하면서 이전 화면들은 백스택에서 제거
+                    navController.navigate(NavRoutes.Home.route) {
+                        popUpTo(NavRoutes.Welcome.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // 홈 화면 라우트
+        composable(route = NavRoutes.Home.route) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "앱 개발 중...",
+                    text = "홈 화면 (개발 중...)",
                     style = MaterialTheme.typography.headlineMedium
                 )
             }
         }
-
-        // 주문 관리 화면 라우트
-        composable(route = NavRoutes.Order.route) {
-            // 현재 구현 예정인 화면 - 구현 후 주석 해제
-            // OrderScreen(
-            //     onNavigateBack = { navController.popBackStack() }
-            // )
-        }
-
-        // 매출 화면 라우트
-        composable(route = NavRoutes.Sales.route) {
-            // 현재 구현 예정인 화면 - 구현 후 주석 해제
-            // SalesScreen(
-            //     onNavigateBack = { navController.popBackStack() }
-            // )
-        }
-
-        // 직원 관리 화면 라우트
-        composable(route = NavRoutes.Staff.route) {
-            // 현재 구현 예정인 화면 - 구현 후 주석 해제
-            // StaffScreen(
-            //     onNavigateBack = { navController.popBackStack() }
-            // )
-        }
-
-        // 추가 화면들..
+        // 나머지 화면들...
+        composable(route = NavRoutes.Order.route) { /* 구현 예정 */ }
+        composable(route = NavRoutes.Sales.route) { /* 구현 예정 */ }
+        composable(route = NavRoutes.Staff.route) { /* 구현 예정 */ }
     }
 }

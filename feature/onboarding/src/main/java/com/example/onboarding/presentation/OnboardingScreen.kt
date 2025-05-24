@@ -42,12 +42,12 @@ data class OnboardingPage(
  * 4개의 온보딩 페이지로 구성되며, 수평 페이저를 통해 사용자가 페이지를 넘길 수 있습니다.
  * 마지막 페이지에 도달하면 시작하기 버튼이 활성화됩니다.
  *
- * @param onNavigateToHome 시작하기 버튼 클릭 시 호출될 콜백 함수 (홈 화면으로 이동)
+ * @param onNavigateToLogin 시작하기 버튼 클릭 시 호출될 콜백 함수 (로그인 화면으로 이동)
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(
-    onNavigateToHome: () -> Unit
+    onNavigateToLogin: () -> Unit  // 파라미터명 변경: onNavigateToHome → onNavigateToLogin
 ) {
     // 온보딩 페이지 정의 - 4개의 화면으로 구성
     val pages = listOf(
@@ -134,8 +134,8 @@ fun OnboardingScreen(
                 text = "시작하기",
                 onClick = {
                     if (isLastPage) {
-                        // 마지막 페이지면 홈 화면으로 이동
-                        onNavigateToHome()
+                        // 마지막 페이지면 로그인 화면으로 이동
+                        onNavigateToLogin()  // 함수명 변경: onNavigateToHome() → onNavigateToLogin()
                     } else {
                         // 아니면 다음 페이지로 이동
                         coroutineScope.launch {
