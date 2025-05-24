@@ -20,4 +20,10 @@ sealed class NavRoutes(val route: String) {
     object Order : NavRoutes("order")
     object Sales : NavRoutes("sales")
     object Staff : NavRoutes("staff")
+
+
+    // Setup 플로우
+    object SetupStoreInfo : NavRoutes("setup_store_info")
+    object SetupBusinessType : NavRoutes("setup_business_type")
+    object SetupKioskCategory : NavRoutes("setup_kiosk_category")
 }

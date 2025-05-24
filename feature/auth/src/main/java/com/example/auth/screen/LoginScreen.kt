@@ -1,4 +1,4 @@
-// feature/auth/screen/LoginScreen.kt (완전한 최종 버전)
+// feature/auth/screen/LoginScreen.kt (업데이트된 버전)
 package com.example.auth.screen
 
 import androidx.compose.foundation.border
@@ -31,11 +31,12 @@ import com.example.ui.theme.barrionColors
 import kotlinx.coroutines.delay
 
 /**
- * 로그인 화면 (완전한 최종 버전)
+ * 로그인 화면 - 코드별 분기 처리
  */
 @Composable
 fun LoginScreen(
-    onNavigateToHome: () -> Unit,
+    onNavigateToHome: () -> Unit,        // 기능 시연용 (바로 홈)
+    onNavigateToSetup: () -> Unit,       // 최초 사용자 Setup 플로우
     modifier: Modifier = Modifier
 ) {
     var code by remember { mutableStateOf("") }
@@ -76,14 +77,15 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(48.dp))
 
         // 코드 입력 박스들
-        ImprovedCodeBoxes(
+        MostReliableCodeBoxes(
             code = code,
             onCodeChange = { newCode ->
                 code = newCode.take(4).filter { it.isDigit() }
-                isError = false
+                isError = false // 새 입력 시 에러 해제
             },
             isError = isError,
             onBoxClick = {
+                // 에러 상태일 때 박스 클릭하면 코드 초기화
                 if (isError) {
                     code = ""
                     isError = false
@@ -104,14 +106,23 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // 로그인 버튼
+        // 로그인 버튼 - 코드별 분기 처리
         BarrionPrimaryButton(
             text = "로그인",
             onClick = {
-                if (code == "1234") {
-                    onNavigateToHome()
-                } else {
-                    isError = true
+                when (code) {
+                    "1234" -> {
+                        // 첫 번째 시연: 최초 사용자 Setup 플로우
+                        onNavigateToSetup()
+                    }
+                    "9999" -> {
+                        // 두 번째 시연: 기존 사용자 바로 홈
+                        onNavigateToHome()
+                    }
+                    else -> {
+                        // 잘못된 코드
+                        isError = true
+                    }
                 }
             },
             enabled = code.length == 4,
@@ -123,95 +134,8 @@ fun LoginScreen(
 }
 
 /**
- * 개선된 4자리 코드 입력 박스들
+ * 가장 확실한 방법 - 항상 키보드가 나오는 버전
  */
-@Composable
-fun ImprovedCodeBoxes(
-    code: String,
-    onCodeChange: (String) -> Unit,
-    isError: Boolean = false,
-    onBoxClick: () -> Unit = {}
-) {
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    // 컴포넌트가 처음 로드될 때 포커스 요청
-    LaunchedEffect(Unit) {
-        delay(100) // 약간의 지연 후 포커스
-        focusRequester.requestFocus()
-    }
-
-    // 에러 해제될 때도 포커스 다시 요청
-    LaunchedEffect(isError) {
-        if (!isError && code.isEmpty()) {
-            delay(50)
-            focusRequester.requestFocus()
-        }
-    }
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // 숨겨진 TextField - 키보드 입력을 받기 위함
-        BasicTextField(
-            value = code,
-            onValueChange = { newValue ->
-                val filtered = newValue.filter { it.isDigit() }.take(4)
-                onCodeChange(filtered)
-            },
-            modifier = Modifier
-                .size(1.dp) // 최소 크기로 설정
-                .focusRequester(focusRequester),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = TextStyle(color = Color.Transparent), // 텍스트도 투명
-            cursorBrush = SolidColor(Color.Transparent), // 커서도 투명
-            singleLine = true
-        )
-
-        // 4개 박스 표시
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.clickable {
-                onBoxClick()
-                // 박스 클릭 시 강제로 키보드 올리기
-                focusRequester.requestFocus()
-                keyboardController?.show()
-            }
-        ) {
-            repeat(4) { index ->
-                val isActive = code.length == index
-                val hasValue = index < code.length
-
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .border(
-                            width = if (isActive || hasValue || isError) 2.dp else 1.dp,
-                            color = when {
-                                isError -> MaterialTheme.barrionColors.error
-                                hasValue -> MaterialTheme.barrionColors.primaryBlue
-                                isActive -> MaterialTheme.barrionColors.primaryBlue
-                                else -> MaterialTheme.barrionColors.grayMediumLight
-                            },
-                            shape = RoundedCornerShape(12.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = code.getOrNull(index)?.toString() ?: "",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isError) {
-                            MaterialTheme.barrionColors.error
-                        } else {
-                            MaterialTheme.barrionColors.grayBlack
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-// 가장 확실한 방법 - 항상 키보드가 나오는 버전
 @Composable
 fun MostReliableCodeBoxes(
     code: String,
