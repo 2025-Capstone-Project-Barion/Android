@@ -120,7 +120,7 @@ fun SetupStoreInfoScreen(
                     )
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth() 
                     .height(64.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
