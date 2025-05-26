@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import com.barrion.navigation.HomeScreen
 import com.example.auth.screen.LoginScreen
 import com.example.auth.screen.WelcomeScreen
+import com.example.menu.screen.CategoryManagementScreen
 import com.example.menu.screen.MenuMviScreen
 import com.example.menu.viewmodel.MenuViewModel
 import com.example.onboarding.presentation.OnboardingScreen
@@ -116,7 +117,7 @@ fun BarrionNavHost(navController: NavHostController) {
 
         // 홈 화면 - 바텀 네비게이션 포함
         composable(route = NavRoutes.Home.route) {
-            HomeScreen()
+            HomeScreen(navController = navController)  // navController 전달
         }
 
         // 바텀 네비게이션 화면들
@@ -125,7 +126,8 @@ fun BarrionNavHost(navController: NavHostController) {
             MenuMviScreen(
                 viewModel = viewModel,
                 onNavigateToCategoryManagement = {
-                    // TODO: 카테고리 관리 화면으로 네비게이션
+                    println("BarrionNavHost: 카테고리 관리로 이동")  // 디버그 로그
+                    navController.navigate(NavRoutes.CategoryManagement.route)
                 },
                 onNavigateToAddMenu = {
                     // TODO: 메뉴 추가 화면으로 네비게이션
@@ -135,6 +137,21 @@ fun BarrionNavHost(navController: NavHostController) {
                 }
             )
         }
+        //
+        composable(route = NavRoutes.CategoryManagement.route) {
+            val viewModel: MenuViewModel = hiltViewModel()
+            CategoryManagementScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAddCategory = {
+                    // TODO: 카테고리 추가 화면으로 네비게이션
+                }
+            )
+        }
+
+
 
         composable(route = NavRoutes.Orders.route) {
             OrderScreen()
@@ -148,4 +165,5 @@ fun BarrionNavHost(navController: NavHostController) {
             StaffScreen()
         }
     }
+
 }

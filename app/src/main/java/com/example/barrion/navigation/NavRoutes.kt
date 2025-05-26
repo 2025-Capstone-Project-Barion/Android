@@ -32,4 +32,7 @@ sealed class NavRoutes(val route: String) {
     object Orders : NavRoutes("orders")
     object Sales : NavRoutes("sales")
     object Staff : NavRoutes("staff")
+
+    // Menu
+    object CategoryManagement : NavRoutes("category_management")
 }

@@ -36,15 +36,19 @@ fun MenuMviScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     // Effect 처리
+// Effect 처리
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
+            println("Effect 받음: $effect")  // 디버그 로그 추가
             when (effect) {
-                is MenuEffect.NavigateToCategoryManagement -> onNavigateToCategoryManagement()
+                is MenuEffect.NavigateToCategoryManagement -> {
+                    println("카테고리 관리로 네비게이션 실행")  // 디버그 로그 추가
+                    onNavigateToCategoryManagement()
+                }
                 is MenuEffect.NavigateToAddMenu -> onNavigateToAddMenu()
                 is MenuEffect.NavigateToCategoryDetail -> {
                     onNavigateToCategoryDetail(effect.categoryId, effect.categoryName)
                 }
-                // TODO: 다른 Effect들 처리
                 else -> {}
             }
         }
@@ -128,7 +132,7 @@ private fun MenuContent(
                 // 카테고리 관리 카드
                 item {
                     CategoryManagementCard(
-                        onClick = { onIntent(MenuIntent.NavigateToCategoryManagement) }
+                        onClick = { onIntent(MenuIntent.NavigateToCategoryManagement) }  // 이 부분이 제대로 되어있는지
                     )
                 }
 

@@ -6,6 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import com.example.barrion.navigation.NavRoutes
 import com.example.menu.screen.MenuMviScreen
 import com.example.menu.viewmodel.MenuViewModel
 import com.example.order.screen.OrderScreen
@@ -15,7 +17,9 @@ import com.example.ui.components.navigation.BarrionBottomNavigation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    navController: NavHostController  // 추가
+) {
     var currentRoute by remember { mutableStateOf("menu") }
 
     // ViewModel 생성
@@ -59,27 +63,25 @@ fun HomeScreen() {
                 "sales" -> SalesScreen()
                 "menu" -> MenuMviScreen(
                     viewModel = menuViewModel,
-                    onNavigateToCategoryManagement = { /* TODO */ },
-                    onNavigateToAddMenu = { /* TODO */ },
-                    onNavigateToCategoryDetail = { _, _ -> /* TODO */ }
+                    onNavigateToCategoryManagement = {
+                        println("HomeScreen: 실제 네비게이션 실행")  // 디버그 로그
+                        navController.navigate(NavRoutes.CategoryManagement.route)
+                    },
+                    onNavigateToAddMenu = { },
+                    onNavigateToCategoryDetail = { _, _ -> }
                 )
                 "orders" -> OrderScreen()
                 "staff" -> StaffScreen()
                 else -> MenuMviScreen(
                     viewModel = menuViewModel,
-                    onNavigateToCategoryManagement = { /* TODO */ },
-                    onNavigateToAddMenu = { /* TODO */ },
-                    onNavigateToCategoryDetail = { _, _ -> /* TODO */ }
+                    onNavigateToCategoryManagement = {
+                        println("HomeScreen: 실제 네비게이션 실행 (else)")
+                        navController.navigate(NavRoutes.CategoryManagement.route)
+                    },
+                    onNavigateToAddMenu = { },
+                    onNavigateToCategoryDetail = { _, _ -> }
                 )
             }
         }
-    }
-}
-
-@Preview
-@Composable
-private fun HomeScreenPreview() {
-    MaterialTheme {
-        HomeScreen()
     }
 }

@@ -22,7 +22,10 @@ fun CategoryManagementCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = onClick,
+        onClick = {
+            println("CategoryManagementCard 클릭됨!")  // 디버그 로그 추가
+            onClick()
+        },
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {

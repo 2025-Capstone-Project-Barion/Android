@@ -45,10 +45,14 @@ class MenuViewModel @Inject constructor(
     }
 
     fun handleIntent(intent: MenuIntent) {
+        println("Intent 받음: $intent")  // 디버그 로그 추가
         when (intent) {
             is MenuIntent.LoadMenus -> loadMenus()
             is MenuIntent.RefreshData -> refreshData()
-            is MenuIntent.NavigateToCategoryManagement -> navigateToCategoryManagement()
+            is MenuIntent.NavigateToCategoryManagement -> {
+                println("카테고리 관리로 이동 Intent 처리")  // 디버그 로그 추가
+                navigateToCategoryManagement()
+            }
             is MenuIntent.NavigateToAddMenu -> navigateToAddMenu()
             is MenuIntent.NavigateToCategoryDetail -> navigateToCategoryDetail(intent.categoryId)
             is MenuIntent.AddMenu -> addMenu(intent)
@@ -138,6 +142,7 @@ class MenuViewModel @Inject constructor(
 
     private fun navigateToCategoryManagement() {
         viewModelScope.launch {
+            println("NavigateToCategoryManagement Effect 발생")  // 디버그 로그 추가
             _effect.emit(MenuEffect.NavigateToCategoryManagement)
         }
     }
