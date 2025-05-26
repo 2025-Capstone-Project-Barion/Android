@@ -1,6 +1,7 @@
 package com.example.menu.component
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -10,12 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.domain.model.Category
+import com.example.ui.theme.Spacing
+import com.example.ui.theme.CornerRadius
+import com.example.ui.theme.barrionColors
 
 /**
- * 카테고리 목록에서 사용되는 개별 카테고리 아이템
- * - 카테고리 순서, 이름, 메뉴 개수 표시
- * - 기본 카테고리는 삭제 불가
- * - 삭제 버튼 포함
+ * 카테고리 아이템 - 색상 및 레이아웃 개선
  */
 @Composable
 fun CategoryItem(
@@ -27,77 +28,77 @@ fun CategoryItem(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.XSmall),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.barrionColors.grayVeryLight
+        ),
+        shape = RoundedCornerShape(CornerRadius.Medium)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Spacing.Medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 순서 번호
             Surface(
-                modifier = Modifier.size(40.dp),
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.primaryContainer
+                modifier = Modifier.size(32.dp),
+                shape = RoundedCornerShape(CornerRadius.Small),
+                color = MaterialTheme.barrionColors.primaryBlue
             ) {
                 Box(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = order.toString(),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.barrionColors.white
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(Spacing.Medium))
 
             // 카테고리 정보
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // 기본 카테고리 표시
-                    if (category.isDefault) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            shape = MaterialTheme.shapes.extraSmall,
-                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
-                        ) {
-                            Text(
-                                text = "기본 카테고리",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = category.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.barrionColors.grayBlack
+                )
 
                 Text(
                     text = "(${menuCount}개 메뉴)",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.barrionColors.grayMedium
                 )
             }
 
-            // 삭제 버튼 (기본 카테고리는 표시하지 않음)
-            if (!category.isDefault) {
+            // 기본 카테고리 표시 또는 삭제 버튼
+            if (category.isDefault) {
+                Surface(
+                    shape = RoundedCornerShape(CornerRadius.Small),
+                    color = MaterialTheme.barrionColors.blueVeryPale
+                ) {
+                    Text(
+                        text = "기본 카테고리",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.barrionColors.primaryBlue,
+                        modifier = Modifier.padding(
+                            horizontal = Spacing.Small,
+                            vertical = Spacing.XSmall
+                        )
+                    )
+                }
+            } else {
                 IconButton(
                     onClick = onDelete,
                     colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                        contentColor = MaterialTheme.barrionColors.error
                     )
                 ) {
                     Icon(

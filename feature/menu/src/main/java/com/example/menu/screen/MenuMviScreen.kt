@@ -10,20 +10,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.menu.component.CategoryManagementCard
 import com.example.menu.component.CategorySection
-import com.example.menu.component.DeleteMenuDialog  // 추가
+import com.example.menu.component.DeleteMenuDialog
 import com.example.menu.type.MenuIntent
 import com.example.menu.type.MenuState
 import com.example.menu.type.MenuEffect
 import com.example.menu.viewmodel.MenuViewModel
+import com.example.ui.theme.Spacing
+import com.example.ui.theme.barrionColors
 
 /**
- * 메뉴 메인 화면
- * - MVI 패턴으로 구현된 Compose 화면
- * - 카테고리별 메뉴 미리보기 표시
+ * 메뉴 메인 화면 - 커스텀 디자인 시스템 적용
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +31,7 @@ fun MenuMviScreen(
     onNavigateToCategoryManagement: () -> Unit = {},
     onNavigateToAddMenu: () -> Unit = {},
     onNavigateToCategoryDetail: (Long, String) -> Unit = { _, _ -> },
-    onNavigateToEditMenu: (Long) -> Unit = {}  // 새로운 파라미터 추가
+    onNavigateToEditMenu: (Long) -> Unit = {}
 ) {
     // State 구독
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -50,35 +49,57 @@ fun MenuMviScreen(
                 is MenuEffect.NavigateToCategoryDetail -> {
                     onNavigateToCategoryDetail(effect.categoryId, effect.categoryName)
                 }
-                is MenuEffect.MenuDeletedSuccessfully -> {  // 추가
+                is MenuEffect.MenuDeletedSuccessfully -> {
                     showDeleteMenuDialog = false
                     menuToDelete = null
                 }
-                // TODO: 다른 Effect들 처리
                 else -> {}
             }
         }
     }
 
-    // UI 구성
+    // UI 구성 - 헤더 위치 조정
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.barrionColors.white,
         topBar = {
-            TopAppBar(
-                title = { Text("메뉴 관리") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "메뉴 관리",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.barrionColors.grayBlack
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = { viewModel.handleIntent(MenuIntent.NavigateToCategoryManagement) }
                     ) {
-                        Icon(Icons.Default.GridView, contentDescription = "카테고리 관리")
+                        Icon(
+                            Icons.Default.GridView,
+                            contentDescription = "카테고리 관리",
+                            tint = MaterialTheme.barrionColors.primaryBlue
+                        )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = { viewModel.handleIntent(MenuIntent.NavigateToAddMenu) }
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "메뉴 추가")
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "메뉴 추가",
+                            tint = MaterialTheme.barrionColors.primaryBlue
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.barrionColors.white,
+                    titleContentColor = MaterialTheme.barrionColors.grayBlack,
+                    navigationIconContentColor = MaterialTheme.barrionColors.primaryBlue,
+                    actionIconContentColor = MaterialTheme.barrionColors.primaryBlue
+                ),
+                windowInsets = WindowInsets.statusBars  // 상태바 inset 사용
             )
         }
     ) { paddingValues ->
@@ -90,7 +111,7 @@ fun MenuMviScreen(
                 showDeleteMenuDialog = true
             },
             onEditMenu = { menu ->
-                onNavigateToEditMenu(menu.id)  // 네비게이션 실행
+                onNavigateToEditMenu(menu.id)
             },
             modifier = Modifier.padding(paddingValues)
         )
@@ -113,14 +134,14 @@ fun MenuMviScreen(
 }
 
 /**
- * 메뉴 화면 내용 컴포넌트
+ * 메뉴 화면 내용 컴포넌트 - 간격 및 색상 적용
  */
 @Composable
 private fun MenuContent(
     state: MenuState,
     onIntent: (MenuIntent) -> Unit,
-    onDeleteMenu: (com.example.domain.model.Menu) -> Unit,  // 새로운 파라미터 추가
-    onEditMenu: (com.example.domain.model.Menu) -> Unit,  // 새로운 파라미터 추가
+    onDeleteMenu: (com.example.domain.model.Menu) -> Unit,
+    onEditMenu: (com.example.domain.model.Menu) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when {
@@ -129,7 +150,9 @@ private fun MenuContent(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    color = MaterialTheme.barrionColors.primaryBlue
+                )
             }
         }
 
@@ -141,13 +164,20 @@ private fun MenuContent(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = state.error,
-                        color = MaterialTheme.colorScheme.error
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.barrionColors.error
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(Spacing.Medium))
                     Button(
-                        onClick = { onIntent(MenuIntent.RefreshData) }
+                        onClick = { onIntent(MenuIntent.RefreshData) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.barrionColors.primaryBlue
+                        )
                     ) {
-                        Text("다시 시도")
+                        Text(
+                            text = "다시 시도",
+                            color = MaterialTheme.barrionColors.white
+                        )
                     }
                 }
             }
@@ -156,18 +186,23 @@ private fun MenuContent(
         else -> {
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(Spacing.Medium),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Large)
             ) {
-                // 카테고리 관리 카드
+                // 카테고리 관리 카드 - 중앙 정렬
                 item {
-                    CategoryManagementCard(
-                        onClick = { onIntent(MenuIntent.NavigateToCategoryManagement) }
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CategoryManagementCard(
+                            onClick = { onIntent(MenuIntent.NavigateToCategoryManagement) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
 
                 // 카테고리별 메뉴 섹션들
-                // CategorySection 호출 부분
                 items(state.categories) { category ->
                     CategorySection(
                         category = category,
@@ -175,7 +210,7 @@ private fun MenuContent(
                         onSeeMore = { onIntent(MenuIntent.NavigateToCategoryDetail(category.id)) },
                         onAddMenu = { onIntent(MenuIntent.NavigateToAddMenu) },
                         onDeleteMenu = onDeleteMenu,
-                        onEditMenu = onEditMenu  // 새로운 콜백 전달
+                        onEditMenu = onEditMenu
                     )
                 }
             }

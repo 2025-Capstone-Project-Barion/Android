@@ -9,4 +9,5 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
 }

@@ -3,6 +3,7 @@ package com.example.menu.screen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -10,15 +11,22 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.menu.component.CategoryItem
 import com.example.menu.component.AddCategoryDialog
-import com.example.menu.component.DeleteCategoryDialog  // 추가
+import com.example.menu.component.DeleteCategoryDialog
 import com.example.menu.type.MenuIntent
 import com.example.menu.type.MenuEffect
 import com.example.menu.viewmodel.MenuViewModel
+import com.example.ui.theme.Spacing
+import com.example.ui.theme.CornerRadius
+import com.example.ui.theme.barrionColors
 
+/**
+ * 카테고리 관리 화면 - 색상 및 디자인 개선
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryManagementScreen(
@@ -50,21 +58,43 @@ fun CategoryManagementScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.barrionColors.white,
         topBar = {
-            TopAppBar(
-                title = { Text("카테고리 관리") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "카테고리 관리",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.barrionColors.grayBlack
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "뒤로가기",
+                            tint = MaterialTheme.barrionColors.grayBlack
+                        )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = { showAddCategoryDialog = true }
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "카테고리 추가")
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "카테고리 추가",
+                            tint = MaterialTheme.barrionColors.primaryBlue
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.barrionColors.white,
+                    titleContentColor = MaterialTheme.barrionColors.grayBlack,
+                    navigationIconContentColor = MaterialTheme.barrionColors.grayBlack,
+                    actionIconContentColor = MaterialTheme.barrionColors.primaryBlue
+                ),
+                windowInsets = WindowInsets.statusBars
             )
         }
     ) { paddingValues ->
@@ -72,7 +102,7 @@ fun CategoryManagementScreen(
             state = state,
             onIntent = viewModel::handleIntent,
             onNavigateToAddCategory = { showAddCategoryDialog = true },
-            onDeleteCategory = { category ->  // 새로운 콜백 추가
+            onDeleteCategory = { category ->
                 categoryToDelete = category
                 showDeleteCategoryDialog = true
             },
@@ -106,14 +136,14 @@ fun CategoryManagementScreen(
 }
 
 /**
- * 카테고리 관리 화면 내용
+ * 카테고리 관리 화면 내용 - 색상 개선
  */
 @Composable
 private fun CategoryManagementContent(
     state: com.example.menu.type.MenuState,
     onIntent: (MenuIntent) -> Unit,
     onNavigateToAddCategory: () -> Unit,
-    onDeleteCategory: (com.example.domain.model.Category) -> Unit,  // 새로운 파라미터 추가
+    onDeleteCategory: (com.example.domain.model.Category) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when {
@@ -122,7 +152,9 @@ private fun CategoryManagementContent(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    color = MaterialTheme.barrionColors.primaryBlue
+                )
             }
         }
 
@@ -134,13 +166,20 @@ private fun CategoryManagementContent(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = state.error,
-                        color = MaterialTheme.colorScheme.error
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.barrionColors.error
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(Spacing.Medium))
                     Button(
-                        onClick = { onIntent(MenuIntent.RefreshData) }
+                        onClick = { onIntent(MenuIntent.RefreshData) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.barrionColors.primaryBlue
+                        )
                     ) {
-                        Text("다시 시도")
+                        Text(
+                            text = "다시 시도",
+                            color = MaterialTheme.barrionColors.white
+                        )
                     }
                 }
             }
@@ -150,9 +189,10 @@ private fun CategoryManagementContent(
             LazyColumn(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(Spacing.Medium),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Small)
             ) {
+                // 카테고리 목록
                 itemsIndexed(state.categories) { index, category ->
                     CategoryItem(
                         category = category,
@@ -160,7 +200,7 @@ private fun CategoryManagementContent(
                         order = index + 1,
                         onDelete = {
                             if (!category.isDefault) {
-                                onDeleteCategory(category)  // 다이얼로그 표시
+                                onDeleteCategory(category)
                             }
                         }
                     )
@@ -168,13 +208,13 @@ private fun CategoryManagementContent(
 
                 // 하단 정보 및 추가 버튼
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(Spacing.Large))
 
                     Text(
                         text = "카테고리 순서를 변경하려면 드래그하여 위치를 조정하세요.\n카테고리 추가는 상단 + 버튼을 이용하세요.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 16.dp)
+                        color = MaterialTheme.barrionColors.grayMedium,
+                        modifier = Modifier.padding(vertical = Spacing.Medium)
                     )
 
                     Row(
@@ -185,20 +225,34 @@ private fun CategoryManagementContent(
                         Column {
                             Text(
                                 text = "총 카테고리",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.barrionColors.grayBlack
                             )
                             Text(
                                 text = "${state.categories.size}개",
-                                style = MaterialTheme.typography.headlineSmall
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.barrionColors.grayBlack
                             )
                         }
 
                         Button(
-                            onClick = onNavigateToAddCategory
+                            onClick = onNavigateToAddCategory,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.barrionColors.primaryBlue
+                            ),
+                            shape = RoundedCornerShape(CornerRadius.Medium)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("카테고리 추가")
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = null,
+                                tint = MaterialTheme.barrionColors.white
+                            )
+                            Spacer(modifier = Modifier.width(Spacing.Small))
+                            Text(
+                                text = "카테고리 추가",
+                                color = MaterialTheme.barrionColors.white
+                            )
                         }
                     }
                 }
