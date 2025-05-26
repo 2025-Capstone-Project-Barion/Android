@@ -11,12 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.barrion.navigation.HomeScreen
 import com.example.auth.screen.LoginScreen
 import com.example.auth.screen.WelcomeScreen
+import com.example.menu.screen.MenuScreen
 import com.example.onboarding.presentation.OnboardingScreen
 import com.example.onboarding.presentation.SetupStoreInfoScreen
 import com.example.onboarding.presentation.SetupBusinessTypeScreen
 import com.example.onboarding.presentation.SetupKioskCategoryScreen
+import com.example.order.screen.OrderScreen
+import com.example.sales.screen.SalesScreen
+import com.example.staff.screen.StaffScreen
 
 /**
  * 앱의 메인 네비게이션 호스트
@@ -108,22 +113,26 @@ fun BarrionNavHost(navController: NavHostController) {
             )
         }
 
-        // 홈 화면
+        // 홈 화면 - 바텀 네비게이션 포함
         composable(route = NavRoutes.Home.route) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "홈 화면 (개발 중...)",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
+            HomeScreen()
         }
 
-        // 나머지 화면들...
-        composable(route = NavRoutes.Order.route) { /* 구현 예정 */ }
-        composable(route = NavRoutes.Sales.route) { /* 구현 예정 */ }
-        composable(route = NavRoutes.Staff.route) { /* 구현 예정 */ }
+        // 바텀 네비게이션 화면들
+        composable(route = NavRoutes.Menu.route) {
+            MenuScreen()
+        }
+
+        composable(route = NavRoutes.Orders.route) {
+            OrderScreen()
+        }
+
+        composable(route = NavRoutes.Sales.route) {
+            SalesScreen()
+        }
+
+        composable(route = NavRoutes.Staff.route) {
+            StaffScreen()
+        }
     }
 }

@@ -73,6 +73,10 @@ dependencies {
     implementation(project(":presentation"))
     implementation(project(":feature:onboarding"))
     implementation(project(":feature:auth"))
+    implementation(project(":feature:menu"))
+    implementation(project(":feature:sales"))
+    implementation(project(":feature:order"))
+    implementation(project(":feature:staff"))
 
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.navigation:navigation-compose:2.7.5")
