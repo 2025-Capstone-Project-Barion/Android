@@ -64,11 +64,19 @@ fun HomeScreen(
                 "menu" -> MenuMviScreen(
                     viewModel = menuViewModel,
                     onNavigateToCategoryManagement = {
-                        println("HomeScreen: 실제 네비게이션 실행")  // 디버그 로그
                         navController.navigate(NavRoutes.CategoryManagement.route)
                     },
-                    onNavigateToAddMenu = { },
-                    onNavigateToCategoryDetail = { _, _ -> }
+                    onNavigateToAddMenu = {
+                        navController.navigate(NavRoutes.AddMenu.createRoute())
+                    },
+                    onNavigateToCategoryDetail = { categoryId, categoryName ->
+                        navController.navigate(
+                            NavRoutes.CategoryDetail.createRoute(categoryId, categoryName)
+                        )
+                    },
+                    onNavigateToEditMenu = { menuId ->
+                        navController.navigate(NavRoutes.EditMenu.createRoute(menuId))  // 추가
+                    }
                 )
                 "orders" -> OrderScreen()
                 "staff" -> StaffScreen()

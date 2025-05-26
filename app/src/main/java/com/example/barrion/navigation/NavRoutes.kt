@@ -35,4 +35,25 @@ sealed class NavRoutes(val route: String) {
 
     // Menu
     object CategoryManagement : NavRoutes("category_management")
+
+    object CategoryDetail : NavRoutes("category_detail/{categoryId}/{categoryName}") {
+        fun createRoute(categoryId: Long, categoryName: String): String {
+            return "category_detail/$categoryId/$categoryName"
+        }
+    }
+    object AddMenu : NavRoutes("add_menu?categoryId={categoryId}") {
+        fun createRoute(categoryId: Long? = null): String {
+            return if (categoryId != null) {
+                "add_menu?categoryId=$categoryId"
+            } else {
+                "add_menu"
+            }
+        }
+    }
+
+    object EditMenu : NavRoutes("edit_menu/{menuId}") {
+        fun createRoute(menuId: Long): String {
+            return "edit_menu/$menuId"
+        }
+    }
 }

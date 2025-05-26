@@ -25,6 +25,8 @@ fun CategorySection(
     menus: List<Menu>,
     onSeeMore: () -> Unit,
     onAddMenu: () -> Unit,
+    onDeleteMenu: (Menu) -> Unit,
+    onEditMenu: (Menu) -> Unit,  // 새로운 파라미터 추가
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -62,11 +64,12 @@ fun CategorySection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
+                // 메뉴 목록 (가로 스크롤) 부분에서
                 items(menus) { menu ->
                     MenuCard(
                         menu = menu,
-                        onEdit = { /* TODO: 수정 로직 */ },
-                        onDelete = { /* TODO: 삭제 로직 */ }
+                        onEdit = { onEditMenu(menu) },  // 수정: 메뉴 편집 콜백
+                        onDelete = { onDeleteMenu(menu) }
                     )
                 }
             }

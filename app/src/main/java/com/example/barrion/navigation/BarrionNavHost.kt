@@ -9,12 +9,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.barrion.navigation.HomeScreen
 import com.example.auth.screen.LoginScreen
 import com.example.auth.screen.WelcomeScreen
+import com.example.menu.screen.AddMenuScreen
+import com.example.menu.screen.CategoryDetailScreen
 import com.example.menu.screen.CategoryManagementScreen
+import com.example.menu.screen.EditMenuScreen
 import com.example.menu.screen.MenuMviScreen
 import com.example.menu.viewmodel.MenuViewModel
 import com.example.onboarding.presentation.OnboardingScreen
@@ -126,31 +131,103 @@ fun BarrionNavHost(navController: NavHostController) {
             MenuMviScreen(
                 viewModel = viewModel,
                 onNavigateToCategoryManagement = {
-                    println("BarrionNavHost: 카테고리 관리로 이동")  // 디버그 로그
                     navController.navigate(NavRoutes.CategoryManagement.route)
                 },
                 onNavigateToAddMenu = {
-                    // TODO: 메뉴 추가 화면으로 네비게이션
+                    navController.navigate(NavRoutes.AddMenu.createRoute())
                 },
                 onNavigateToCategoryDetail = { categoryId, categoryName ->
-                    // TODO: 카테고리 상세 화면으로 네비게이션
+                    navController.navigate(
+                        NavRoutes.CategoryDetail.createRoute(categoryId, categoryName)
+                    )
+                },
+                onNavigateToEditMenu = { menuId ->
+                    navController.navigate(NavRoutes.EditMenu.createRoute(menuId))  // 추가
                 }
             )
         }
-        //
+
         composable(route = NavRoutes.CategoryManagement.route) {
             val viewModel: MenuViewModel = hiltViewModel()
             CategoryManagementScreen(
                 viewModel = viewModel,
                 onNavigateBack = {
                     navController.popBackStack()
+                }
+                // onNavigateToAddCategory 파라미터 제거 (다이얼로그로 처리하므로 불필요)
+            )
+        }
+        // 기존 composable들 아래에 추가
+
+        composable(
+            route = NavRoutes.CategoryDetail.route,
+            arguments = listOf(
+                navArgument("categoryId") { type = NavType.LongType },
+                navArgument("categoryName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getLong("categoryId") ?: 0L
+            val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
+            val viewModel: MenuViewModel = hiltViewModel()
+
+            CategoryDetailScreen(
+                categoryId = categoryId,
+                categoryName = categoryName,
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
                 },
-                onNavigateToAddCategory = {
-                    // TODO: 카테고리 추가 화면으로 네비게이션
+                onNavigateToAddMenu = { categoryId ->
+                    navController.navigate(NavRoutes.AddMenu.createRoute(categoryId))
+                },
+                onNavigateToEditMenu = { menuId ->
+                    navController.navigate(NavRoutes.EditMenu.createRoute(menuId))  // 수정
                 }
             )
         }
 
+        // 기존 composable들 아래에 추가
+
+        composable(
+            route = NavRoutes.AddMenu.route,
+            arguments = listOf(
+                navArgument("categoryId") {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                    nullable = false
+                }
+            )
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getLong("categoryId")?.takeIf { it != 0L }
+            val viewModel: MenuViewModel = hiltViewModel()
+
+            AddMenuScreen(
+                selectedCategoryId = categoryId,
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        // 기존 composable들 아래에 추가
+
+        composable(
+            route = NavRoutes.EditMenu.route,
+            arguments = listOf(
+                navArgument("menuId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val menuId = backStackEntry.arguments?.getLong("menuId") ?: 0L
+            val viewModel: MenuViewModel = hiltViewModel()
+
+            EditMenuScreen(
+                menuId = menuId,
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
 
 
         composable(route = NavRoutes.Orders.route) {

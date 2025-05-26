@@ -13,31 +13,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.menu.component.CategoryItem
+import com.example.menu.component.AddCategoryDialog
+import com.example.menu.component.DeleteCategoryDialog  // 추가
 import com.example.menu.type.MenuIntent
 import com.example.menu.type.MenuEffect
 import com.example.menu.viewmodel.MenuViewModel
 
-/**
- * 카테고리 관리 화면
- * - 카테고리 목록 표시
- * - 카테고리 추가/삭제
- * - 순서 변경 (추후 구현)
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryManagementScreen(
     viewModel: MenuViewModel,
-    onNavigateBack: () -> Unit = {},
-    onNavigateToAddCategory: () -> Unit = {}
+    onNavigateBack: () -> Unit = {}
 ) {
     // State 구독
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // 다이얼로그 상태들
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var showDeleteCategoryDialog by remember { mutableStateOf(false) }
+    var categoryToDelete by remember { mutableStateOf<com.example.domain.model.Category?>(null) }
 
     // Effect 처리
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                // TODO: 카테고리 관련 Effect 처리
+                is MenuEffect.CategoryAddedSuccessfully -> {
+                    showAddCategoryDialog = false
+                }
+                is MenuEffect.CategoryDeletedSuccessfully -> {
+                    showDeleteCategoryDialog = false
+                    categoryToDelete = null
+                }
                 else -> {}
             }
         }
@@ -53,7 +59,9 @@ fun CategoryManagementScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToAddCategory) {
+                    IconButton(
+                        onClick = { showAddCategoryDialog = true }
+                    ) {
                         Icon(Icons.Default.Add, contentDescription = "카테고리 추가")
                     }
                 }
@@ -63,8 +71,36 @@ fun CategoryManagementScreen(
         CategoryManagementContent(
             state = state,
             onIntent = viewModel::handleIntent,
-            onNavigateToAddCategory = onNavigateToAddCategory,
+            onNavigateToAddCategory = { showAddCategoryDialog = true },
+            onDeleteCategory = { category ->  // 새로운 콜백 추가
+                categoryToDelete = category
+                showDeleteCategoryDialog = true
+            },
             modifier = Modifier.padding(paddingValues)
+        )
+
+        // 카테고리 추가 다이얼로그
+        AddCategoryDialog(
+            isVisible = showAddCategoryDialog,
+            onDismiss = { showAddCategoryDialog = false },
+            onConfirm = { categoryName ->
+                viewModel.handleIntent(MenuIntent.AddCategory(categoryName))
+            }
+        )
+
+        // 카테고리 삭제 확인 다이얼로그
+        DeleteCategoryDialog(
+            isVisible = showDeleteCategoryDialog,
+            categoryName = categoryToDelete?.name ?: "",
+            onDismiss = {
+                showDeleteCategoryDialog = false
+                categoryToDelete = null
+            },
+            onConfirm = {
+                categoryToDelete?.let { category ->
+                    viewModel.handleIntent(MenuIntent.DeleteCategory(category.id))
+                }
+            }
         )
     }
 }
@@ -77,6 +113,7 @@ private fun CategoryManagementContent(
     state: com.example.menu.type.MenuState,
     onIntent: (MenuIntent) -> Unit,
     onNavigateToAddCategory: () -> Unit,
+    onDeleteCategory: (com.example.domain.model.Category) -> Unit,  // 새로운 파라미터 추가
     modifier: Modifier = Modifier
 ) {
     when {
@@ -116,7 +153,6 @@ private fun CategoryManagementContent(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 카테고리 목록
                 itemsIndexed(state.categories) { index, category ->
                     CategoryItem(
                         category = category,
@@ -124,7 +160,7 @@ private fun CategoryManagementContent(
                         order = index + 1,
                         onDelete = {
                             if (!category.isDefault) {
-                                onIntent(MenuIntent.DeleteCategory(category.id))
+                                onDeleteCategory(category)  // 다이얼로그 표시
                             }
                         }
                     )

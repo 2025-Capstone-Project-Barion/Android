@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.menu.component.CategoryManagementCard
 import com.example.menu.component.CategorySection
+import com.example.menu.component.DeleteMenuDialog  // 추가
 import com.example.menu.type.MenuIntent
 import com.example.menu.type.MenuState
 import com.example.menu.type.MenuEffect
@@ -30,25 +31,30 @@ fun MenuMviScreen(
     viewModel: MenuViewModel,
     onNavigateToCategoryManagement: () -> Unit = {},
     onNavigateToAddMenu: () -> Unit = {},
-    onNavigateToCategoryDetail: (Long, String) -> Unit = { _, _ -> }
+    onNavigateToCategoryDetail: (Long, String) -> Unit = { _, _ -> },
+    onNavigateToEditMenu: (Long) -> Unit = {}  // 새로운 파라미터 추가
 ) {
     // State 구독
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    // 메뉴 삭제 다이얼로그 상태
+    var showDeleteMenuDialog by remember { mutableStateOf(false) }
+    var menuToDelete by remember { mutableStateOf<com.example.domain.model.Menu?>(null) }
+
     // Effect 처리
-// Effect 처리
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
-            println("Effect 받음: $effect")  // 디버그 로그 추가
             when (effect) {
-                is MenuEffect.NavigateToCategoryManagement -> {
-                    println("카테고리 관리로 네비게이션 실행")  // 디버그 로그 추가
-                    onNavigateToCategoryManagement()
-                }
+                is MenuEffect.NavigateToCategoryManagement -> onNavigateToCategoryManagement()
                 is MenuEffect.NavigateToAddMenu -> onNavigateToAddMenu()
                 is MenuEffect.NavigateToCategoryDetail -> {
                     onNavigateToCategoryDetail(effect.categoryId, effect.categoryName)
                 }
+                is MenuEffect.MenuDeletedSuccessfully -> {  // 추가
+                    showDeleteMenuDialog = false
+                    menuToDelete = null
+                }
+                // TODO: 다른 Effect들 처리
                 else -> {}
             }
         }
@@ -79,7 +85,29 @@ fun MenuMviScreen(
         MenuContent(
             state = state,
             onIntent = viewModel::handleIntent,
+            onDeleteMenu = { menu ->
+                menuToDelete = menu
+                showDeleteMenuDialog = true
+            },
+            onEditMenu = { menu ->
+                onNavigateToEditMenu(menu.id)  // 네비게이션 실행
+            },
             modifier = Modifier.padding(paddingValues)
+        )
+
+        // 메뉴 삭제 확인 다이얼로그
+        DeleteMenuDialog(
+            isVisible = showDeleteMenuDialog,
+            menuName = menuToDelete?.name ?: "",
+            onDismiss = {
+                showDeleteMenuDialog = false
+                menuToDelete = null
+            },
+            onConfirm = {
+                menuToDelete?.let { menu ->
+                    viewModel.handleIntent(MenuIntent.DeleteMenu(menu.id))
+                }
+            }
         )
     }
 }
@@ -91,6 +119,8 @@ fun MenuMviScreen(
 private fun MenuContent(
     state: MenuState,
     onIntent: (MenuIntent) -> Unit,
+    onDeleteMenu: (com.example.domain.model.Menu) -> Unit,  // 새로운 파라미터 추가
+    onEditMenu: (com.example.domain.model.Menu) -> Unit,  // 새로운 파라미터 추가
     modifier: Modifier = Modifier
 ) {
     when {
@@ -132,17 +162,20 @@ private fun MenuContent(
                 // 카테고리 관리 카드
                 item {
                     CategoryManagementCard(
-                        onClick = { onIntent(MenuIntent.NavigateToCategoryManagement) }  // 이 부분이 제대로 되어있는지
+                        onClick = { onIntent(MenuIntent.NavigateToCategoryManagement) }
                     )
                 }
 
                 // 카테고리별 메뉴 섹션들
+                // CategorySection 호출 부분
                 items(state.categories) { category ->
                     CategorySection(
                         category = category,
                         menus = state.getMenusForCategory(category.id),
                         onSeeMore = { onIntent(MenuIntent.NavigateToCategoryDetail(category.id)) },
-                        onAddMenu = { onIntent(MenuIntent.NavigateToAddMenu) }
+                        onAddMenu = { onIntent(MenuIntent.NavigateToAddMenu) },
+                        onDeleteMenu = onDeleteMenu,
+                        onEditMenu = onEditMenu  // 새로운 콜백 전달
                     )
                 }
             }
