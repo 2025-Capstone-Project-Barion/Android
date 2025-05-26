@@ -57,6 +57,8 @@ android {
 dependencies {
     // 코어 UI 모듈 의존성
     implementation(project(":core:ui"))
+    implementation(project(":domain"))
+    implementation(project(":core:common"))
 
     // Hilt 관련 추가 (커스텀 플러그인이 제공 안할 경우)
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
@@ -80,4 +82,8 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    // coil
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
 }

@@ -1,4 +1,3 @@
-// app/src/main/java/com/barrion/navigation/HomeScreen.kt
 package com.barrion.navigation
 
 import androidx.compose.foundation.layout.*
@@ -6,7 +5,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.menu.screen.MenuScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.menu.screen.MenuMviScreen
+import com.example.menu.viewmodel.MenuViewModel
 import com.example.order.screen.OrderScreen
 import com.example.sales.screen.SalesScreen
 import com.example.staff.screen.StaffScreen
@@ -16,6 +17,9 @@ import com.example.ui.components.navigation.BarrionBottomNavigation
 @Composable
 fun HomeScreen() {
     var currentRoute by remember { mutableStateOf("menu") }
+
+    // ViewModel 생성
+    val menuViewModel: MenuViewModel = hiltViewModel()
 
     Scaffold(
         topBar = {
@@ -53,10 +57,20 @@ fun HomeScreen() {
         ) {
             when (currentRoute) {
                 "sales" -> SalesScreen()
-                "menu" -> MenuScreen()
+                "menu" -> MenuMviScreen(
+                    viewModel = menuViewModel,
+                    onNavigateToCategoryManagement = { /* TODO */ },
+                    onNavigateToAddMenu = { /* TODO */ },
+                    onNavigateToCategoryDetail = { _, _ -> /* TODO */ }
+                )
                 "orders" -> OrderScreen()
                 "staff" -> StaffScreen()
-                else -> MenuScreen() // 기본값
+                else -> MenuMviScreen(
+                    viewModel = menuViewModel,
+                    onNavigateToCategoryManagement = { /* TODO */ },
+                    onNavigateToAddMenu = { /* TODO */ },
+                    onNavigateToCategoryDetail = { _, _ -> /* TODO */ }
+                )
             }
         }
     }

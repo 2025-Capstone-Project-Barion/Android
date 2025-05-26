@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/barrion/navigation/BarrionNavHost.kt (최종 버전)
 package com.example.barrion.navigation
 
 import androidx.compose.foundation.layout.Box
@@ -8,13 +7,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.barrion.navigation.HomeScreen
 import com.example.auth.screen.LoginScreen
 import com.example.auth.screen.WelcomeScreen
-import com.example.menu.screen.MenuScreen
+import com.example.menu.screen.MenuMviScreen
+import com.example.menu.viewmodel.MenuViewModel
 import com.example.onboarding.presentation.OnboardingScreen
 import com.example.onboarding.presentation.SetupStoreInfoScreen
 import com.example.onboarding.presentation.SetupBusinessTypeScreen
@@ -120,7 +121,19 @@ fun BarrionNavHost(navController: NavHostController) {
 
         // 바텀 네비게이션 화면들
         composable(route = NavRoutes.Menu.route) {
-            MenuScreen()
+            val viewModel: MenuViewModel = hiltViewModel()
+            MenuMviScreen(
+                viewModel = viewModel,
+                onNavigateToCategoryManagement = {
+                    // TODO: 카테고리 관리 화면으로 네비게이션
+                },
+                onNavigateToAddMenu = {
+                    // TODO: 메뉴 추가 화면으로 네비게이션
+                },
+                onNavigateToCategoryDetail = { categoryId, categoryName ->
+                    // TODO: 카테고리 상세 화면으로 네비게이션
+                }
+            )
         }
 
         composable(route = NavRoutes.Orders.route) {
