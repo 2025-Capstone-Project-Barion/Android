@@ -75,13 +75,17 @@ class MenuViewModel @Inject constructor(
     // addCategory 함수 수정
     private fun addCategory(name: String) {
         viewModelScope.launch {
+            println("📁 ViewModel - 카테고리 추가 시작: $name")
+
             addCategoryUseCase.execute(name)
                 .onSuccess { category ->
+                    println("✅ ViewModel - 카테고리 추가 성공: $category")
                     _effect.emit(MenuEffect.CategoryAddedSuccessfully)
                     _effect.emit(MenuEffect.ShowToast("카테고리가 추가되었습니다"))
-                    loadMenus()  // 데이터 새로고침
+                    loadMenus()
                 }
                 .onFailure { exception ->
+                    println("❌ ViewModel - 카테고리 추가 실패: ${exception.message}")
                     _effect.emit(MenuEffect.ShowError(
                         exception.message ?: "카테고리 추가 중 오류가 발생했습니다"
                     ))
@@ -147,22 +151,17 @@ class MenuViewModel @Inject constructor(
 
     private fun addMenu(intent: MenuIntent.AddMenu) {
         viewModelScope.launch {
+            println("📱 ViewModel - 메뉴 추가 요청")
+            println("📱 메뉴 이름: ${intent.name}")
+            println("📱 base64 이미지: ${intent.base64Image?.take(50) ?: "❌ NULL"}...")
+
             addMenuUseCase.execute(
                 name = intent.name,
                 price = intent.price,
                 categoryId = intent.categoryId,
                 description = intent.description,
-                imageUrl = intent.imageUrl
+                base64Image = intent.base64Image
             )
-                .onSuccess {
-                    _effect.emit(MenuEffect.MenuAddedSuccessfully)
-                    loadMenus()
-                }
-                .onFailure { exception ->
-                    _effect.emit(MenuEffect.ShowError(
-                        exception.message ?: "메뉴 추가 중 오류가 발생했습니다"
-                    ))
-                }
         }
     }
 // updateMenu 함수 추가

@@ -20,7 +20,8 @@ sealed interface MenuIntent {
         val price: Int,
         val categoryId: Long,
         val description: String = "",
-        val imageUrl: String = ""
+        val imageUrl: String = "",
+        val base64Image: String? = null  // 추가
     ) : MenuIntent
 
     data class UpdateMenu(val menu: com.example.domain.model.Menu) : MenuIntent

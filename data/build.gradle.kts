@@ -2,6 +2,7 @@ plugins {
     id("barrion.android.library")
     id("barrion.network") // 네트워크 통신 관련
     id("barrion.hilt") // 의존성 주입 필요한 경우
+    id("barrion.imageloading")
 
 
     id("com.android.library")
@@ -41,7 +42,10 @@ dependencies {
     ksp("com.google.dagger:hilt-compiler:2.48")  // kapt → ksp
 
 
+    // JSON
+    implementation("com.google.code.gson:gson:2.10.1")
 
+    
     // SharedPreferences는 Android 기본 라이브러리에 포함되어 있으므로
     // 따로 의존성을 추가할 필요가 없습니다.
     // androidx.core:core-ktx는 AndroidLibraryConventionPlugin에서 이미 추가됨

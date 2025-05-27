@@ -19,7 +19,7 @@ interface MenuRepository {
     // 메뉴 관련
     suspend fun getMenusByCategory(categoryId: Long): Result<List<Menu>>
     suspend fun getAllMenus(): Result<List<Menu>>
-    suspend fun addMenu(menu: Menu): Result<Menu>
+    suspend fun addMenu(menu: Menu, base64Image: String? = null): Result<Menu>
     suspend fun updateMenu(menu: Menu): Result<Menu>
     suspend fun deleteMenu(menuId: Long): Result<Unit>
 }

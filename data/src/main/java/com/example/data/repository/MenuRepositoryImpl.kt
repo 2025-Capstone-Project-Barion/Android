@@ -1,139 +1,276 @@
 package com.example.data.repository
 
+import android.util.Log
+import com.example.data.api.CategoryApi
+import com.example.data.api.MenuApi
+import com.example.data.mapper.toDomain
+import com.example.data.mapper.toCategoryDomainList
+import com.example.data.mapper.toMenuDomainList
+import com.example.data.mapper.toCreateRequest
+import com.example.data.mapper.toUpdateRequest
 import com.example.domain.model.Menu
 import com.example.domain.model.Category
 import com.example.domain.repository.MenuRepository
 import javax.inject.Inject
 import javax.inject.Singleton
-
+import com.example.data.dto.MenuPageResponse
+import com.example.data.dto.MenuDto
+import retrofit2.Response
 /**
  * MenuRepository 구현체
- * - 실제 데이터 소스(API, 로컬DB)와 연동
- * - 현재는 임시 데이터로 구현, 추후 실제 API 연동
+ * - 실제 API와 연동하여 메뉴/카테고리 데이터 관리
+ * - 기존 임시 데이터에서 실제 API 호출로 변경
  */
 @Singleton
 class MenuRepositoryImpl @Inject constructor(
-    // TODO: 추후 API 서비스 주입
-    // private val menuApi: MenuApi,
-    // private val menuDao: MenuDao
+    // 실제 API 서비스 주입
+    private val menuApi: MenuApi,
+    private val categoryApi: CategoryApi
 ) : MenuRepository {
 
-    // 임시 데이터 (추후 제거)
-    private val tempCategories = listOf(
-        Category(id = 1, name = "추천", order = 1, isDefault = true, menuCount = 2),
-        Category(id = 2, name = "커피", order = 2, isDefault = false, menuCount = 4),
-        Category(id = 3, name = "논커피", order = 3, isDefault = false, menuCount = 3),
-        Category(id = 4, name = "디저트", order = 4, isDefault = false, menuCount = 2)
-    )
+    companion object {
+        private const val TAG = "MenuRepositoryImpl"
+    }
 
-    private val tempMenus = mutableListOf(
-        Menu(id = 1, name = "시그니처 커피", price = 6000, categoryId = 1, description = "우리 카페만의 특별한 블렌드"),
-        Menu(id = 2, name = "베스트 라떼", price = 5500, categoryId = 1, description = "가장 인기있는 시즌 라떼"),
-        Menu(id = 3, name = "아메리카노", price = 4000, categoryId = 2, description = "진한 에스프레소"),
-        Menu(id = 4, name = "카푸치노", price = 4500, categoryId = 2, description = "부드러운 거품"),
-        Menu(id = 5, name = "카페라떼", price = 4500, categoryId = 2, description = "부드러운 우유"),
-        Menu(id = 6, name = "바닐라라떼", price = 5000, categoryId = 2, description = "달콤한 바닐라")
-    )
-
+    /**
+     * 모든 카테고리 조회
+     * 기존: 임시 데이터 반환 → 변경: 실제 API 호출
+     */
     override suspend fun getCategories(): Result<List<Category>> {
         return try {
-            // TODO: 실제 API 호출
-            // val response = menuApi.getCategories()
-            Result.success(tempCategories)
+            Log.d(TAG, "🔄 카테고리 목록 조회 시작")
+
+            // 실제 API 호출
+            val response = categoryApi.getCategories()
+            Log.d(TAG, "📡 카테고리 API 응답 코드: ${response.code()}")
+            Log.d(TAG, "📡 카테고리 API 응답 성공 여부: ${response.isSuccessful}")
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                Log.d(TAG, "✅ 카테고리 응답 성공: ${body?.size}개 항목")
+                Log.d(TAG, "📦 원본 카테고리 데이터: $body")
+
+                val categories = body?.toCategoryDomainList() ?: emptyList()
+                Log.d(TAG, "🔄 도메인 변환 완료: ${categories.size}개")
+                Log.d(TAG, "🏆 최종 카테고리 데이터: $categories")
+
+                Result.success(categories)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val error = "카테고리 조회 실패: ${response.code()} - ${response.message()}"
+                Log.e(TAG, "❌ $error")
+                Log.e(TAG, "❌ 에러 바디: $errorBody")
+                Result.failure(Exception(error))
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            val error = "카테고리 조회 중 네트워크 오류: ${e.message}"
+            Log.e(TAG, "💥 $error", e)
+            Result.failure(Exception(error))
         }
     }
 
+    /**
+     * 새 카테고리 추가
+     * 기존: 임시 카테고리 생성 → 변경: 실제 API 호출
+     */
+    /**
+     * 새 카테고리 추가
+     * 기존: 임시 카테고리 생성 → 변경: 실제 API 호출
+     */
     override suspend fun addCategory(name: String): Result<Category> {
         return try {
-            // TODO: 실제 API 호출
-            val newCategory = Category(
-                id = tempCategories.size + 1L,
+            Log.d(TAG, "📁 카테고리 추가 시작: $name")
+
+            // 임시 ID 생성 (서버에서 실제 ID 할당)
+            val tempCategory = Category(
+                id = 0, // 서버에서 할당받을 예정
                 name = name,
-                order = tempCategories.size + 1,
+                order = 999, // 임시 순서
                 isDefault = false,
                 menuCount = 0
             )
-            Result.success(newCategory)
+
+            val request = tempCategory.toCreateRequest()
+            Log.d(TAG, "📁 요청 데이터: $request")
+
+            val response = categoryApi.createCategory(request)
+            Log.d(TAG, "📁 서버 응답 코드: ${response.code()}")
+            Log.d(TAG, "📁 서버 응답 메시지: ${response.message()}")
+
+            if (response.isSuccessful) {
+                val createdCategory = response.body()?.toDomain()
+                    ?: throw Exception("서버 응답이 비어있습니다")
+                Log.d(TAG, "✅ 카테고리 생성 성공: $createdCategory")
+                Result.success(createdCategory)
+            } else {
+                // 에러 바디도 확인
+                val errorBody = response.errorBody()?.string()
+                Log.e(TAG, "❌ 카테고리 생성 실패")
+                Log.e(TAG, "❌ 응답 코드: ${response.code()}")
+                Log.e(TAG, "❌ 응답 메시지: ${response.message()}")
+                Log.e(TAG, "❌ 에러 바디: $errorBody")
+
+                Result.failure(Exception("카테고리 생성 실패: ${response.code()} - ${response.message()}"))
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            Log.e(TAG, "💥 카테고리 생성 중 예외 발생: ${e.message}", e)
+            Result.failure(Exception("카테고리 생성 중 네트워크 오류: ${e.message}"))
         }
     }
 
+    /**
+     * 카테고리 삭제
+     * 기존: 성공만 반환 → 변경: 실제 API 호출
+     */
     override suspend fun deleteCategory(categoryId: Long): Result<Unit> {
         return try {
-            // TODO: 실제 API 호출
-            Result.success(Unit)
+            // 실제 API 호출
+            val response = categoryApi.deleteCategory(categoryId)
+
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("카테고리 삭제 실패: ${response.code()} - ${response.message()}"))
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("카테고리 삭제 중 네트워크 오류: ${e.message}"))
         }
     }
 
+    /**
+     * 카테고리 순서 업데이트
+     * 현재: API에 해당 엔드포인트가 없어서 주석 처리
+     * TODO: 백엔드에 카테고리 순서 변경 API 추가 시 구현
+     */
     override suspend fun updateCategoryOrder(categories: List<Category>): Result<Unit> {
         return try {
-            // TODO: 실제 API 호출
+            // TODO: 실제 API 호출 (현재 API에 해당 엔드포인트 없음)
+            // for (category in categories) {
+            //     categoryApi.updateCategoryOrder(category.id, category.order)
+            // }
+
+            // 현재는 성공으로 처리 (임시)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
+    /**
+     * 특정 카테고리의 메뉴들 조회
+     * 기존: 임시 데이터 필터링 → 변경: 실제 API 호출
+     */
     override suspend fun getMenusByCategory(categoryId: Long): Result<List<Menu>> {
         return try {
-            // TODO: 실제 API 호출
-            val menus = tempMenus.filter { it.categoryId == categoryId }
-            Result.success(menus)
+            val response = menuApi.getMenus(page = 0, size = 100, category = categoryId)
+
+            if (response.isSuccessful) {
+                val pageResponse: MenuPageResponse? = response.body()
+                val content: List<MenuDto>? = pageResponse?.content
+                val menus = content?.toMenuDomainList() ?: emptyList()
+                Result.success(menus)
+            } else {
+                Result.failure(Exception("카테고리별 메뉴 조회 실패: ${response.code()}"))
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("네트워크 오류: ${e.message}"))
         }
     }
 
+    /**
+     * 모든 메뉴 조회
+     * 기존: 임시 데이터 반환 → 변경: 실제 API 호출
+     */
     override suspend fun getAllMenus(): Result<List<Menu>> {
         return try {
-            // TODO: 실제 API 호출
-            Result.success(tempMenus.toList())
+            val response = menuApi.getMenus(page = 0, size = 100, category = null)
+
+            if (response.isSuccessful) {
+                val pageResponse: MenuPageResponse? = response.body()
+                val content: List<MenuDto>? = pageResponse?.content
+                val menus = content?.toMenuDomainList() ?: emptyList()
+                Result.success(menus)
+            } else {
+                Result.failure(Exception("메뉴 목록 조회 실패: ${response.code()}"))
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("메뉴 조회 중 네트워크 오류: ${e.message}"))
         }
     }
 
-    override suspend fun addMenu(menu: Menu): Result<Menu> {
+    /**
+     * 새 메뉴 추가
+     * 기존: 임시 ID 할당 → 변경: 실제 API 호출
+     */
+    override suspend fun addMenu(menu: Menu, base64Image: String?): Result<Menu> {  // = null 제거
         return try {
-            // TODO: 실제 API 호출
-            val newMenu = menu.copy(id = tempMenus.size + 1L)
-            tempMenus.add(newMenu)
-            Result.success(newMenu)
+            Log.d(TAG, "📱 메뉴 추가 시작: ${menu.name}")
+            Log.d(TAG, "🖼️ Base64 이미지: ${base64Image?.take(50) ?: "없음"}...")
+
+            // base64Image를 실제로 전달
+            val request = menu.toCreateRequest(base64Image = base64Image)
+            val response = menuApi.createMenu(request)
+
+            if (response.isSuccessful) {
+                val createdMenu = response.body()?.toDomain()
+                    ?: throw Exception("서버 응답이 비어있습니다")
+                Log.d(TAG, "✅ 메뉴 생성 성공: ${createdMenu.name}")
+                Result.success(createdMenu)
+            } else {
+                val error = "메뉴 생성 실패: ${response.code()} - ${response.message()}"
+                Log.e(TAG, "❌ $error")
+                Result.failure(Exception(error))
+            }
         } catch (e: Exception) {
-            Result.failure(e)
+            val error = "메뉴 생성 중 네트워크 오류: ${e.message}"
+            Log.e(TAG, "💥 $error", e)
+            Result.failure(Exception(error))
         }
     }
 
+    /**
+     * 메뉴 정보 수정
+     * 기존: 임시 리스트 수정 → 변경: 실제 API 호출
+     */
     override suspend fun updateMenu(menu: Menu): Result<Menu> {
         return try {
-            // TODO: 실제 API 호출
-            val index = tempMenus.indexOfFirst { it.id == menu.id }
-            if (index != -1) {
-                tempMenus[index] = menu
-                Result.success(menu)
+            // base64Image 없이 메뉴 수정 (임시)
+            val request = menu.toUpdateRequest(base64Image = null)
+            val response = menuApi.updateMenu(menu.id, request)
+
+            if (response.isSuccessful) {
+                val updatedMenu = response.body()?.toDomain()
+                    ?: throw Exception("서버 응답이 비어있습니다")
+                Result.success(updatedMenu)
             } else {
-                Result.failure(IllegalArgumentException("메뉴를 찾을 수 없습니다"))
+                Result.failure(Exception("메뉴 수정 실패: ${response.code()} - ${response.message()}"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("메뉴 수정 중 네트워크 오류: ${e.message}"))
         }
     }
 
+    /**
+     * 메뉴 삭제
+     * 기존: 임시 리스트에서 제거 → 변경: 실제 API 호출
+     */
     override suspend fun deleteMenu(menuId: Long): Result<Unit> {
         return try {
-            // TODO: 실제 API 호출
-            val menuToRemove = tempMenus.find { it.id == menuId }
-            if (menuToRemove != null) {
-                tempMenus.remove(menuToRemove)
+            // 실제 API 호출
+            val response = menuApi.deleteMenu(menuId)
+
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("메뉴 삭제 실패: ${response.code()} - ${response.message()}"))
             }
-            Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("메뉴 삭제 중 네트워크 오류: ${e.message}"))
         }
     }
+
+    // TODO: 이미지 업로드 기능을 위한 추가 메서드들
+    // 향후 Repository 인터페이스에 추가 필요:
+    // suspend fun addMenuWithImage(menu: Menu, base64Image: String): Result<Menu>
+    // suspend fun updateMenuWithImage(menu: Menu, base64Image: String?): Result<Menu>
 }
