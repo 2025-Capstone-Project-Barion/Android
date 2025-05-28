@@ -1,124 +1,123 @@
 package com.example.staff.viewmodel
 
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.staff.type.Staff
+import com.example.domain.model.Staff
+import com.example.domain.usecase.staff.DeleteStaffUseCase
+import com.example.domain.usecase.staff.GetStaffByIdUseCase
+import com.example.domain.usecase.staff.GetStaffListUseCase
+import com.example.domain.usecase.staff.SearchStaffUseCase
+import com.example.domain.usecase.staff.UpdateStaffUseCase
 import com.example.staff.type.StaffEffect
 import com.example.staff.type.StaffIntent
-import com.example.staff.type.StaffRole
 import com.example.staff.type.StaffState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import androidx.compose.runtime.setValue
+import com.example.domain.usecase.staff.AddStaffUseCase
 
-class StaffViewModel : ViewModel() {
 
-    private val _state = MutableStateFlow(StaffState())
-    val state: StateFlow<StaffState> = _state.asStateFlow()
+@HiltViewModel
+class StaffViewModel @Inject constructor(
+    private val getStaffListUseCase: GetStaffListUseCase,
+    private val searchStaffUseCase: SearchStaffUseCase,
+    private val getStaffByIdUseCase: GetStaffByIdUseCase,
+    private val addStaffUseCase: AddStaffUseCase,
+    private val updateStaffUseCase: UpdateStaffUseCase,
+    private val deleteStaffUseCase: DeleteStaffUseCase
+) : ViewModel() {
 
-    private val _effect = MutableSharedFlow<StaffEffect>()
-    val effect: SharedFlow<StaffEffect> = _effect.asSharedFlow()
+    var state by mutableStateOf(StaffState())
+        private set
 
-    init {
-        handleIntent(StaffIntent.LoadStaff)
-    }
+    private val _effect = Channel<StaffEffect>()
+    val effect = _effect.receiveAsFlow()
 
-    fun handleIntent(intent: StaffIntent) {
+    fun onIntent(intent: StaffIntent) {
         when (intent) {
-            is StaffIntent.LoadStaff -> loadStaff()
-            is StaffIntent.SelectStaff -> selectStaff(intent.staffId)
+            is StaffIntent.LoadStaffList -> loadStaffList()
+            is StaffIntent.SearchStaff -> searchStaff(intent.query)
+            is StaffIntent.SelectStaff -> selectStaff(intent.id)
             is StaffIntent.AddStaff -> addStaff(intent.staff)
             is StaffIntent.UpdateStaff -> updateStaff(intent.staff)
-            is StaffIntent.DeleteStaff -> deleteStaff(intent.staffId)
-            is StaffIntent.UpdateStaffRole -> updateStaffRole(intent.staffId, intent.role)
-            is StaffIntent.ShowAddStaffDialog -> showAddStaffDialog()
-            is StaffIntent.HideAddStaffDialog -> hideAddStaffDialog()
-            is StaffIntent.ClearError -> clearError()
+            is StaffIntent.DeleteStaff -> deleteStaff(intent.id)
+            is StaffIntent.NavigateBack -> sendEffect(StaffEffect.NavigateBack)
         }
     }
 
-    private fun loadStaff() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
-
-            try {
-                // 임시 데이터
-                val staffList = getSampleStaff()
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    staffList = staffList
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = "직원 데이터를 불러올 수 없습니다"
-                )
-            }
+    private fun loadStaffList() = launch {
+        state = state.copy(isLoading = true)
+        val result = getStaffListUseCase()
+        result.onSuccess {
+            state = state.copy(staffList = it, isLoading = false)
+        }.onFailure {
+            state = state.copy(errorMessage = it.message, isLoading = false)
         }
     }
 
-    private fun selectStaff(staffId: String) {
-        val staff = _state.value.staffList.find { it.id == staffId }
-        _state.value = _state.value.copy(selectedStaff = staff)
-
-        viewModelScope.launch {
-            _effect.emit(StaffEffect.NavigateToStaffDetail(staffId))
+    private fun searchStaff(query: String) = launch {
+        val result = searchStaffUseCase(query)
+        result.onSuccess {
+            state = state.copy(staffList = it)
+        }.onFailure {
+            state = state.copy(errorMessage = it.message)
         }
     }
 
-    private fun addStaff(staff: Staff) {
-        _state.value = _state.value.copy(
-            staffList = _state.value.staffList + staff,
-            showAddStaffDialog = false
-        )
-
-        viewModelScope.launch {
-            _effect.emit(StaffEffect.ShowToast("직원이 추가되었습니다"))
+    private fun selectStaff(id: Long) = launch {
+        val result = getStaffByIdUseCase(id)
+        result.onSuccess {
+            state = state.copy(selectedStaff = it)
+            sendEffect(StaffEffect.NavigateToDetail(id))
+        }.onFailure {
+            state = state.copy(errorMessage = it.message)
         }
     }
 
-    private fun updateStaff(staff: Staff) {
-        _state.value = _state.value.copy(
-            staffList = _state.value.staffList.map {
-                if (it.id == staff.id) staff else it
-            }
-        )
-    }
-
-    private fun deleteStaff(staffId: String) {
-        _state.value = _state.value.copy(
-            staffList = _state.value.staffList.filter { it.id != staffId }
-        )
-
-        viewModelScope.launch {
-            _effect.emit(StaffEffect.ShowToast("직원이 삭제되었습니다"))
+    private fun addStaff(staff: Staff) = launch {
+        val result = addStaffUseCase(staff)
+        result.onSuccess {
+            state = state.copy(successMessage = "직원 추가 완료")
+            loadStaffList()
+            sendEffect(StaffEffect.NavigateBack)
+        }.onFailure {
+            state = state.copy(errorMessage = it.message)
         }
     }
 
-    private fun updateStaffRole(staffId: String, role: StaffRole) {
-        _state.value = _state.value.copy(
-            staffList = _state.value.staffList.map { staff ->
-                if (staff.id == staffId) {
-                    staff.copy(role = role)
-                } else {
-                    staff
-                }
-            }
-        )
+    private fun updateStaff(staff: Staff) = launch {
+        val result = updateStaffUseCase(staff)
+        result.onSuccess {
+            state = state.copy(successMessage = "직원 수정 완료")
+            loadStaffList()
+            sendEffect(StaffEffect.NavigateBack)
+        }.onFailure {
+            state = state.copy(errorMessage = it.message)
+        }
     }
 
-    private fun showAddStaffDialog() {
-        _state.value = _state.value.copy(showAddStaffDialog = true)
+    private fun deleteStaff(id: Long) = launch {
+        val result = deleteStaffUseCase(id)
+        result.onSuccess {
+            state = state.copy(successMessage = "직원 삭제 완료")
+            loadStaffList()
+            sendEffect(StaffEffect.NavigateBack)
+        }.onFailure {
+            state = state.copy(errorMessage = it.message)
+        }
     }
 
-    private fun hideAddStaffDialog() {
-        _state.value = _state.value.copy(showAddStaffDialog = false)
+    private fun sendEffect(effect: StaffEffect) = launch {
+        _effect.send(effect)
     }
 
-    private fun clearError() {
-        _state.value = _state.value.copy(error = null)
-    }
-
-    private fun getSampleStaff(): List<Staff> {
-        return emptyList() // 일단 빈 리스트
+    private fun launch(block: suspend () -> Unit) {
+        viewModelScope.launch { block() }
     }
 }

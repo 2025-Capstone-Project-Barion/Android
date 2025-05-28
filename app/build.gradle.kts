@@ -71,6 +71,7 @@ dependencies {
     // 기존 의존성 유지
     implementation(project(":core:ui"))
     implementation(project(":data"))
+    implementation(project(":domain"))
     implementation(project(":core:common"))
     implementation(project(":presentation"))
     implementation(project(":feature:onboarding"))
