@@ -203,6 +203,8 @@ fun BarrionNavHost(navController: NavHostController) {
         }
 
         // ========== 직원 관리 상세 화면들 ==========
+
+        // ✅ Staff 상세 화면 - onEditClick 파라미터 제거
         composable(
             route = NavRoutes.StaffDetail.route,
             arguments = listOf(navArgument("staffId") { type = NavType.LongType })
@@ -210,9 +212,7 @@ fun BarrionNavHost(navController: NavHostController) {
             val staffId = backStackEntry.arguments?.getLong("staffId") ?: 0L
             StaffDetailScreen(
                 staffId = staffId,
-                onEditClick = { staff ->
-                    navController.navigate(NavRoutes.StaffEdit.createRoute(staff.id))
-                },
+                // ✅ onEditClick 파라미터 제거됨
                 onBack = {
                     navController.popBackStack()
                 }

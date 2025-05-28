@@ -76,16 +76,15 @@ fun HomeScreen(
                 NavRoutes.Sales.route -> SalesScreen()
                 NavRoutes.Orders.route -> OrderScreen()
 
+                // ✅ StaffScreen에서 onNavigateToEdit 파라미터 제거
                 NavRoutes.Staff.route -> StaffScreen(
                     onNavigateToDetail = { staffId ->
                         navController.navigate(NavRoutes.StaffDetail.createRoute(staffId))
                     },
                     onNavigateToAdd = {
                         navController.navigate(NavRoutes.StaffEdit.createRoute())
-                    },
-                    onNavigateToEdit = { staffId ->
-                        navController.navigate(NavRoutes.StaffEdit.createRoute(staffId))
                     }
+                    // ✅ onNavigateToEdit 제거됨
                 )
 
                 NavRoutes.Menu.route -> MenuMviScreen(

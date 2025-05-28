@@ -32,8 +32,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun StaffDetailScreen(
     viewModel: StaffViewModel = hiltViewModel(),
     staffId: Long,
-    onEditClick: (Staff) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit  // ✅ onEditClick 파라미터 제거
 ) {
     val state = viewModel.state
     val context = LocalContext.current
@@ -54,7 +53,6 @@ fun StaffDetailScreen(
 
     val staff = state.selectedStaff
 
-    // Scaffold로 다시 변경 (하지만 innerPadding 문제 해결)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -81,17 +79,17 @@ fun StaffDetailScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.barrionColors.grayWhite  // grayVeryLight → grayWhite로 더 밝게
+        containerColor = MaterialTheme.barrionColors.grayWhite
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // 이 부분이 문제였을 수 있음
+                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             staff?.let { staffInfo ->
-                // 프로필 카드 (커스텀 컴포넌트 대신 기본 사용)
+                // 프로필 카드
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -139,7 +137,7 @@ fun StaffDetailScreen(
                     }
                 }
 
-                // 정보 카드 (커스텀 컴포넌트 대신 기본 사용)
+                // 정보 카드
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -197,34 +195,19 @@ fun StaffDetailScreen(
                     }
                 }
 
-                // 버튼들 (기본 Button 사용)
-                Row(
+                // ✅ 삭제하기 버튼만 있음 (수정하기 버튼 제거)
+                Button(
+                    onClick = {
+                        viewModel.onIntent(StaffIntent.DeleteStaff(staffInfo.id))
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    colors = ButtonDefaults.buttonColors(
+                        //containerColor = MaterialTheme.barrionColors.errorRed  // ✅ 삭제 색상으로 변경
+                    )
                 ) {
-                    Button(
-                        onClick = {
-                            viewModel.onIntent(StaffIntent.DeleteStaff(staffInfo.id))
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.barrionColors.grayMedium
-                        )
-                    ) {
-                        Text("삭제하기", color = MaterialTheme.barrionColors.white)
-                    }
-
-                    Button(
-                        onClick = { onEditClick(staffInfo) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.barrionColors.primaryBlue
-                        )
-                    ) {
-                        Text("수정하기", color = MaterialTheme.barrionColors.white)
-                    }
+                    Text("삭제하기", color = MaterialTheme.barrionColors.white)
                 }
 
                 // 하단 여백

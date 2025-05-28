@@ -5,71 +5,55 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * 서버와 통신용 직원 DTO
+ * 서버 응답용 직원 DTO - 실제 서버 스펙 반영
  */
 @Serializable
 data class StaffDto(
-    val id: Long,
-    val name: String,
-    @SerialName("phone_number")
+    @SerialName("employeeId")
+    val employeeId: Long,
+
+    @SerialName("storeId")
+    val storeId: Long,
+
+    @SerialName("employeeName")
+    val employeeName: String,
+
+    @SerialName("phoneNumber")
     val phoneNumber: String,
-    @SerialName("hourly_wage")
-    val hourlyWage: Int,
-    @SerialName("position_code")
-    val positionCode: String,
-    @SerialName("bank_code")
-    val bankCode: String,
-    @SerialName("account_number")
-    val accountNumber: String,
-    @SerialName("created_at")
-    val createdAt: String? = null,
-    @SerialName("updated_at")
-    val updatedAt: String? = null
+
+    @SerialName("salary")
+    val salary: Int,  // 시급
+
+    @SerialName("position")
+    val position: String,
+
+    @SerialName("bankAccount")
+    val bankAccount: String
 )
 
 /**
- * 직원 추가용 DTO
+ * 직원 생성용 DTO - POST 요청 시 사용
  */
 @Serializable
 data class CreateStaffDto(
-    val name: String,
-    @SerialName("phone_number")
-    val phoneNumber: String,
-    @SerialName("hourly_wage")
-    val hourlyWage: Int,
-    @SerialName("position_code")
-    val positionCode: String,
-    @SerialName("bank_code")
-    val bankCode: String,
-    @SerialName("account_number")
-    val accountNumber: String
-)
+    @SerialName("employeeId")
+    val employeeId: Long = 0,  // 생성 시 0으로 전송
 
-/**
- * 직원 수정용 DTO
- */
-@Serializable
-data class UpdateStaffDto(
-    val name: String,
-    @SerialName("phone_number")
-    val phoneNumber: String,
-    @SerialName("hourly_wage")
-    val hourlyWage: Int,
-    @SerialName("position_code")
-    val positionCode: String,
-    @SerialName("bank_code")
-    val bankCode: String,
-    @SerialName("account_number")
-    val accountNumber: String
-)
+    @SerialName("storeId")
+    val storeId: Long,
 
-/**
- * 직원 목록 응답 DTO
- */
-@Serializable
-data class StaffListResponseDto(
-    val data: List<StaffDto>,
-    val total: Int,
-    val page: Int? = null,
-    val size: Int? = null
+    @SerialName("employeeName")
+    val employeeName: String,
+
+    @SerialName("phoneNumber")
+    val phoneNumber: String,
+
+    @SerialName("salary")
+    val salary: Int,
+
+    @SerialName("position")
+    val position: String,
+
+    @SerialName("bankAccount")
+    val bankAccount: String
 )

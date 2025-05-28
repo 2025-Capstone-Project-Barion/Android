@@ -21,8 +21,6 @@ import com.example.staff.component.StaffListItem
 import com.example.staff.type.StaffEffect
 import com.example.staff.type.StaffIntent
 import com.example.staff.viewmodel.StaffViewModel
-import com.example.ui.components.textfields.BarrionTextField
-import com.example.ui.components.textfields.BarrionTextFieldState
 import com.example.ui.theme.CornerRadius
 import com.example.ui.theme.Spacing
 import com.example.ui.theme.barrionColors
@@ -32,9 +30,9 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun StaffScreen(
     viewModel: StaffViewModel = hiltViewModel(),
-    onNavigateToDetail: (Long) -> Unit,
-    onNavigateToAdd: () -> Unit,
-    onNavigateToEdit: (Long) -> Unit  // 개별 수정을 위한 새 파라미터
+    onNavigateToDetail: (Long) -> Unit,  // ✅ 직원 정보 페이지로 이동
+    onNavigateToAdd: () -> Unit
+    // ✅ onNavigateToEdit 파라미터 제거 (더 이상 사용 안함)
 ) {
     val state = viewModel.state
     val context = LocalContext.current
@@ -100,7 +98,7 @@ fun StaffScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // 검색바 (이미지 2처럼 더 심플하게)
+            // 검색바
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -170,8 +168,8 @@ fun StaffScreen(
                             StaffListItem(
                                 staff = staff,
                                 onClick = {
-                                    // 개별 직원 클릭 시 바로 수정 화면으로 이동
-                                    onNavigateToEdit(staff.id)
+                                    // ✅ 직원 클릭 시 직원 정보 페이지로 이동 (수정됨)
+                                    onNavigateToDetail(staff.id)
                                 }
                             )
                         }
