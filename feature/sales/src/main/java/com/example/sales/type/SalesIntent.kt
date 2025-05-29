@@ -1,14 +1,30 @@
 package com.example.sales.type
 
-import java.time.LocalDate
 
+
+// feature/sales/type/SalesIntent.kt
+
+/**
+ * Sales 화면의 사용자 의도 (Intent)
+ */
 sealed class SalesIntent {
+    /**
+     * 매출 데이터 로딩
+     */
     object LoadSalesData : SalesIntent()
-    data class SelectPeriod(val period: SalesPeriod) : SalesIntent()
-    object RefreshData : SalesIntent()
-    object ClearError : SalesIntent()
-}
 
-enum class SalesPeriod {
-    TODAY, WEEK, MONTH, YEAR
+    /**
+     * 데이터 새로고침
+     */
+    object RefreshData : SalesIntent()
+
+    /**
+     * 월 선택
+     */
+    data class SelectMonth(val month: Int) : SalesIntent()
+
+    /**
+     * 연도 선택
+     */
+    data class SelectYear(val year: Int) : SalesIntent()
 }

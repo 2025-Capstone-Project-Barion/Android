@@ -1,24 +1,28 @@
 package com.example.sales.type
 
+import com.example.domain.model.ChartData
+import com.example.domain.model.SalesData
+import com.example.domain.model.SalesSummary
+import com.example.domain.model.TotalSales
 import java.time.LocalDate
 
+/**
+ * Sales 화면의 상태 (State)
+ */
 data class SalesState(
-    val salesData: List<SalesData> = emptyList(),
-    val selectedPeriod: SalesPeriod = SalesPeriod.TODAY,
     val isLoading: Boolean = false,
+    val totalSales: TotalSales? = null,
+    val yearlySales: List<SalesData> = emptyList(),
+    val monthlySales: List<SalesData> = emptyList(),
+    val salesSummary: SalesSummary? = null,
+    val chartData: List<ChartData> = emptyList(),
+    val selectedMonth: Int? = null,
+    val selectedYear: Int = 2025,
     val error: String? = null
 ) {
-    val totalSales: Long
-        get() = salesData.sumOf { it.amount }
-
-    val totalOrders: Int
-        get() = salesData.sumOf { it.orderCount }
-
-    val averageOrderValue: Long
-        get() = if (totalOrders > 0) totalSales / totalOrders else 0
+    /**
+     * 빈 상태 여부
+     */
+    val isEmpty: Boolean
+        get() = totalSales == null && yearlySales.isEmpty() && monthlySales.isEmpty()
 }
-
-data class SalesData(
-    val amount: Long,
-    val orderCount: Int
-)
