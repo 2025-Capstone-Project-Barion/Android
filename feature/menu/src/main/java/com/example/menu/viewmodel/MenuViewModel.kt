@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.domain.usecase.menu.AddCategoryUseCase
 import com.example.domain.usecase.menu.GetMenusUseCase
 import com.example.domain.usecase.menu.AddMenuUseCase
+import com.example.domain.usecase.menu.DeleteCategoryUseCase
 import com.example.domain.usecase.menu.DeleteMenuUseCase
 import com.example.domain.usecase.menu.UpdateMenuUseCase
 import com.example.menu.type.MenuIntent
@@ -23,19 +24,14 @@ import javax.inject.Inject
 /**
  * 메뉴 화면의 ViewModel - MVI 패턴 구현
  */
-//class MenuViewModel(
-//    private val getMenusUseCase: GetMenusUseCase,
-//    private val addMenuUseCase: AddMenuUseCase,
-//    private val deleteMenuUseCase: DeleteMenuUseCase
-//) : ViewModel() {
-
-@HiltViewModel //Hilt 추가
+@HiltViewModel
 class MenuViewModel @Inject constructor(
     private val getMenusUseCase: GetMenusUseCase,
     private val addMenuUseCase: AddMenuUseCase,
     private val deleteMenuUseCase: DeleteMenuUseCase,
-    private val addCategoryUseCase: AddCategoryUseCase, // 추가
-    private val updateMenuUseCase: UpdateMenuUseCase  // 추가
+    private val addCategoryUseCase: AddCategoryUseCase,
+    private val updateMenuUseCase: UpdateMenuUseCase,
+    private val deleteCategoryUseCase: DeleteCategoryUseCase  // 쉼표 추가
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MenuState())
@@ -49,30 +45,29 @@ class MenuViewModel @Inject constructor(
     }
 
     fun handleIntent(intent: MenuIntent) {
-        println("Intent 받음: $intent")  // 디버그 로그 추가
+        println("Intent 받음: $intent")
         when (intent) {
             is MenuIntent.LoadMenus -> loadMenus()
             is MenuIntent.RefreshData -> refreshData()
             is MenuIntent.NavigateToCategoryManagement -> {
-                println("카테고리 관리로 이동 Intent 처리")  // 디버그 로그 추가
+                println("카테고리 관리로 이동 Intent 처리")
                 navigateToCategoryManagement()
             }
             is MenuIntent.NavigateToAddMenu -> navigateToAddMenu()
             is MenuIntent.NavigateToCategoryDetail -> navigateToCategoryDetail(intent.categoryId)
             is MenuIntent.AddMenu -> addMenu(intent)
-            is MenuIntent.UpdateMenu -> updateMenu(intent.menu)  // 추가
+            is MenuIntent.UpdateMenu -> updateMenu(intent.menu)
             is MenuIntent.DeleteMenu -> deleteMenu(intent.menuId)
-            is MenuIntent.AddCategory -> addCategory(intent.name)  // 추가
-            is MenuIntent.DeleteCategory -> deleteCategory(intent.categoryId)  // 추가
+            is MenuIntent.AddCategory -> addCategory(intent.name)
+            is MenuIntent.DeleteCategory -> deleteCategory(intent.categoryId)
             is MenuIntent.ClearError -> clearError()
             else -> { /* TODO: 나머지 구현 */ }
         }
     }
-// 새로운 함수들 추가
+
     /**
      * 카테고리 추가
      */
-    // addCategory 함수 수정
     private fun addCategory(name: String) {
         viewModelScope.launch {
             println("📁 ViewModel - 카테고리 추가 시작: $name")
@@ -98,12 +93,21 @@ class MenuViewModel @Inject constructor(
      */
     private fun deleteCategory(categoryId: Long) {
         viewModelScope.launch {
-            // TODO: DeleteCategoryUseCase 구현 후 사용
-            // 임시로 성공 처리
-            _effect.emit(MenuEffect.CategoryDeletedSuccessfully)
-            _effect.emit(MenuEffect.ShowToast("카테고리가 삭제되었습니다"))
-            // 데이터 다시 로드
-            loadMenus()
+            println("🗑️ ViewModel - 카테고리 삭제 시작: $categoryId")
+
+            deleteCategoryUseCase.execute(categoryId)
+                .onSuccess {
+                    println("✅ ViewModel - 카테고리 삭제 성공")
+                    _effect.emit(MenuEffect.CategoryDeletedSuccessfully)
+                    _effect.emit(MenuEffect.ShowToast("카테고리가 삭제되었습니다"))
+                    loadMenus() // 데이터 새로고침
+                }
+                .onFailure { exception ->
+                    println("❌ ViewModel - 카테고리 삭제 실패: ${exception.message}")
+                    _effect.emit(MenuEffect.ShowError(
+                        exception.message ?: "카테고리 삭제 중 오류가 발생했습니다"
+                    ))
+                }
         }
     }
 
@@ -164,18 +168,17 @@ class MenuViewModel @Inject constructor(
             )
         }
     }
-// updateMenu 함수 추가
+
     /**
      * 메뉴 수정
      */
-    // updateMenu 함수 수정
     private fun updateMenu(menu: com.example.domain.model.Menu) {
         viewModelScope.launch {
             updateMenuUseCase.execute(menu)
                 .onSuccess { updatedMenu ->
                     _effect.emit(MenuEffect.MenuUpdatedSuccessfully)
                     _effect.emit(MenuEffect.ShowToast("메뉴가 수정되었습니다"))
-                    loadMenus()  // 데이터 새로고침
+                    loadMenus()
                 }
                 .onFailure { exception ->
                     _effect.emit(MenuEffect.ShowError(
@@ -184,6 +187,7 @@ class MenuViewModel @Inject constructor(
                 }
         }
     }
+
     private fun deleteMenu(menuId: Long) {
         viewModelScope.launch {
             deleteMenuUseCase.execute(menuId)
@@ -201,7 +205,7 @@ class MenuViewModel @Inject constructor(
 
     private fun navigateToCategoryManagement() {
         viewModelScope.launch {
-            println("NavigateToCategoryManagement Effect 발생")  // 디버그 로그 추가
+            println("NavigateToCategoryManagement Effect 발생")
             _effect.emit(MenuEffect.NavigateToCategoryManagement)
         }
     }

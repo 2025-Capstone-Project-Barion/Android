@@ -35,13 +35,14 @@ fun CategoryManagementScreen(
 ) {
     // State 구독
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // 다이얼로그 상태들
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showDeleteCategoryDialog by remember { mutableStateOf(false) }
     var categoryToDelete by remember { mutableStateOf<com.example.domain.model.Category?>(null) }
 
-    // Effect 처리
+    // Effect 처리 - 에러/토스트 케이스 추가
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -52,6 +53,18 @@ fun CategoryManagementScreen(
                     showDeleteCategoryDialog = false
                     categoryToDelete = null
                 }
+                is MenuEffect.ShowError -> {
+                    snackbarHostState.showSnackbar(
+                        message = effect.error,
+                        duration = SnackbarDuration.Long
+                    )
+                }
+                is MenuEffect.ShowToast -> {
+                    snackbarHostState.showSnackbar(
+                        message = effect.message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
                 else -> {}
             }
         }
@@ -59,6 +72,7 @@ fun CategoryManagementScreen(
 
     Scaffold(
         containerColor = MaterialTheme.barrionColors.white,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = {

@@ -22,12 +22,15 @@ import com.example.domain.model.Category
  * - order: API에 order 필드가 없으므로 categoryId를 Int로 변환하여 사용
  * - 나머지 필드들은 기본값 사용
  */
+/**
+ * 카테고리 관련 데이터 변환을 담당하는 매퍼 함수들
+ */
+
 fun CategoryDto.toDomain(): Category {
     return Category(
-        id = categoryId, // Long 그대로 사용
+        id = categoryId,
         name = categoryName,
-        order = categoryId.toInt(), // Long을 Int로 변환 (order 필드용)
-        // API에 없는 필드들은 기본값 설정
+        order = categoryId.toInt(),
         isDefault = false,
         menuCount = 0,
         createdAt = System.currentTimeMillis()
@@ -44,9 +47,16 @@ fun CategoryDto.toDomain(): Category {
  * - id → categoryId: Domain의 id를 서버의 categoryId로 매핑
  * - name → categoryName: Domain의 name을 서버의 categoryName으로 매핑
  */
+
+
+/**
+ * Domain 모델을 서버 생성 요청 DTO로 변환
+ * ⚠️ categoryId는 서버에서 자동 생성하므로 포함하지 않음
+ */
+// 2. CategoryMapper.kt 수정
 fun Category.toCreateRequest(): CategoryCreateRequest {
     return CategoryCreateRequest(
-        categoryId = id, // Long 그대로 사용
+        categoryId = id,  // ID 포함해서 전송
         categoryName = name
     )
 }

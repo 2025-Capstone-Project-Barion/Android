@@ -13,6 +13,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -59,16 +60,42 @@ object NetworkModule {
      * - 로깅 인터셉터 추가
      * - 타임아웃 설정 (연결, 읽기, 쓰기 각각 30초)
      */
+// NetworkModule.kt - 인터셉터 순서 변경 및 강화
     @Provides
     @Singleton
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)        // HTTP 로깅
-            .connectTimeout(30, TimeUnit.SECONDS)      // 연결 타임아웃
-            .readTimeout(30, TimeUnit.SECONDS)         // 읽기 타임아웃
-            .writeTimeout(30, TimeUnit.SECONDS)        // 쓰기 타임아웃
+            // 로깅 인터셉터를 먼저 추가
+            .addInterceptor(loggingInterceptor)
+            // 헤더 인터셉터를 나중에 추가 (더 높은 우선순위)
+            .addInterceptor { chain ->
+                val original = chain.request()
+
+                // 강제로 로그 출력
+                android.util.Log.d("HeaderInterceptor", "🔧 헤더 인터셉터 실행됨!")
+                android.util.Log.d("HeaderInterceptor", "원본 URL: ${original.url}")
+                android.util.Log.d("HeaderInterceptor", "원본 헤더: ${original.headers}")
+
+                val newRequest = original.newBuilder()
+                    .removeHeader("Content-Type")  // 기존 헤더 제거
+                    .removeHeader("Accept")
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Accept", "application/json")
+                    .addHeader("User-Agent", "Barrion-Android")
+                    .build()
+
+                android.util.Log.d("HeaderInterceptor", "수정된 헤더: ${newRequest.headers}")
+
+                val response = chain.proceed(newRequest)
+                android.util.Log.d("HeaderInterceptor", "응답 코드: ${response.code}")
+
+                response
+            }
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 
@@ -107,7 +134,33 @@ object NetworkModule {
      */
     @Provides
     @Singleton
-    fun provideCategoryApi(retrofit: Retrofit): CategoryApi {
+    fun provideCategoryApi(@Named("CategoryRetrofit") retrofit: Retrofit): CategoryApi {
         return retrofit.create(CategoryApi::class.java)
+    }
+    // NetworkModule.kt에 추가
+    @Provides
+    @Singleton
+    @Named("CategoryRetrofit")
+    fun provideCategoryRetrofit(json: Json): Retrofit {
+        val client = OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Accept", "application/json")
+                    .build()
+
+                android.util.Log.d("CategoryRetrofit", "헤더 추가됨: ${request.headers}")
+                chain.proceed(request)
+            }
+            .build()
+
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(client)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
     }
 }

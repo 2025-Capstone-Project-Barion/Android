@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CategoryDto(
     @SerialName("categoryId")
-    val categoryId: Long, // Int에서 Long으로 변경
+    val categoryId: Long,
     @SerialName("categoryName")
     val categoryName: String
 )
@@ -15,7 +15,7 @@ data class CategoryDto(
 @Serializable
 data class CategoryCreateRequest(
     @SerialName("categoryId")
-    val categoryId: Long, // Int에서 Long으로 변경
+    val categoryId: Long,  // 필수 필드로 변경
     @SerialName("categoryName")
     val categoryName: String
 )
