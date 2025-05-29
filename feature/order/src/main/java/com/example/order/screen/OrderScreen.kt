@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,6 +22,7 @@ import com.example.ui.theme.Spacing
 import com.example.ui.theme.CornerRadius
 import com.example.ui.components.buttons.BarrionNavigationButtons
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderScreen(
     viewModel: OrderViewModel,
@@ -28,96 +31,124 @@ fun OrderScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var orderToDelete by rememberSaveable { mutableIntStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Effect 처리
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is OrderEffect.ShowError -> {
-                    // 에러 스낵바 또는 토스트 처리
+                    snackbarHostState.showSnackbar(effect.message)
                 }
                 is OrderEffect.ShowDeleteSuccess -> {
-                    // 성공 메시지 처리
+                    snackbarHostState.showSnackbar("${effect.orderNumber}번 주문이 삭제되었습니다")
                 }
-                else -> Unit
+                is OrderEffect.NavigateToOrderDetail -> {
+                    // 주문 상세 화면으로 네비게이션
+                }
             }
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.barrionColors.white)
-            .padding(Spacing.Medium)
-    ) {
-        // 상단 헤더 - 주문 관리만 가운데 표시
-        Text(
-            text = "주문 관리",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.barrionColors.grayBlack,
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentWidth(Alignment.CenterHorizontally)
-                .padding(bottom = Spacing.Large)
-        )
-
-        // 정산 현황 카드
-        if (state.summary != null) {
-            OrderSummaryCard(
-                summary = state.summary!!,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.Large))
-        }
-
-        // 주문 내역 제목 - 왼쪽 배치로 변경
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 왼쪽: 주문 내역 제목
-            Text(
-                text = "주문 내역",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.barrionColors.grayBlack,
-                fontWeight = FontWeight.Bold
-            )
-
-            // 오른쪽: 총 건수
-            Text(
-                text = "총 ${state.orders.size}건",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.barrionColors.grayMedium
-            )
-        }
-
-        Spacer(modifier = Modifier.height(Spacing.Medium))
-
-        // 주문 목록
-        when {
-            state.isLoading -> {
-                OrderLoadingState()
-            }
-
-            state.isEmpty -> {
-                OrderEmptyState()
-            }
-
-            else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(state.orders) { order ->
-                        OrderListItem(
-                            order = order,
-                            onDeleteClick = { orderId ->
-                                orderToDelete = orderId
-                                showDeleteDialog = true
-                            }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "주문 관리",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { viewModel.handleIntent(OrderIntent.RefreshData) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "새로고침"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.barrionColors.white,
+                    titleContentColor = MaterialTheme.barrionColors.grayBlack,
+                    actionIconContentColor = MaterialTheme.barrionColors.grayBlack
+                )
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.barrionColors.white
+    ) { paddingValues ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(Spacing.Medium)
+        ) {
+            // 정산 현황 카드
+            if (state.summary != null) {
+                OrderSummaryCard(
+                    summary = state.summary!!,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.Large))
+            }
+
+            // 주문 내역 제목 - 왼쪽 배치로 변경
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 왼쪽: 주문 내역 제목
+                Text(
+                    text = "주문 내역",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.barrionColors.grayBlack,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // 오른쪽: 총 건수
+                Text(
+                    text = "총 ${state.orders.size}건",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.barrionColors.grayMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.Medium))
+
+            // 주문 목록
+            when {
+                state.isLoading -> {
+                    OrderLoadingState()
+                }
+
+                state.isEmpty -> {
+                    OrderEmptyState()
+                }
+
+                else -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(state.orders) { order ->
+                            OrderListItem(
+                                order = order,
+                                onDeleteClick = { orderId ->
+                                    orderToDelete = orderId
+                                    showDeleteDialog = true
+                                }
+                            )
+                        }
                     }
                 }
             }

@@ -22,4 +22,5 @@ interface MenuRepository {
     suspend fun addMenu(menu: Menu, base64Image: String? = null): Result<Menu>
     suspend fun updateMenu(menu: Menu): Result<Menu>
     suspend fun deleteMenu(menuId: Long): Result<Unit>
+    suspend fun updateMenuWithImage(menu: Menu, base64Image: String): Result<Menu> // 추가
 }

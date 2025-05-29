@@ -76,14 +76,22 @@ fun ImageUploadArea(
     ) { uri: Uri? ->
         uri?.let { imageUri ->
             try {
+                println("🖼️ 갤러리 이미지 선택됨: $imageUri")
                 val inputStream = context.contentResolver.openInputStream(imageUri)
-                val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                val bitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream?.close()
 
-                // Bitmap을 Base64로 변환
-                val base64String = bitmapToBase64(bitmap)
-                onImageSelected("data:image/jpeg;base64,$base64String")
+                if (bitmap != null) {
+                    // Bitmap을 Base64로 변환
+                    val base64String = bitmapToBase64(bitmap)
+                    val dataUri = "data:image/jpeg;base64,$base64String"
+                    onImageSelected(dataUri)
+                    println("🖼️ 갤러리 이미지 Base64 변환 완료: ${base64String.take(50)}...")
+                } else {
+                    println("❌ 갤러리 이미지 Bitmap 변환 실패")
+                }
             } catch (e: Exception) {
+                println("❌ 갤러리 이미지 처리 오류: ${e.message}")
                 e.printStackTrace()
             }
         }
@@ -95,15 +103,25 @@ fun ImageUploadArea(
     ) { success: Boolean ->
         if (success) {
             try {
-                val bitmap = android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath)
-                val base64String = bitmapToBase64(bitmap)
-                onImageSelected("data:image/jpeg;base64,$base64String")
+                println("🖼️ 카메라 촬영 완료")
+                val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
+                if (bitmap != null) {
+                    val base64String = bitmapToBase64(bitmap)
+                    val dataUri = "data:image/jpeg;base64,$base64String"
+                    onImageSelected(dataUri)
+                    println("🖼️ 카메라 이미지 Base64 변환 완료: ${base64String.take(50)}...")
+                } else {
+                    println("❌ 카메라 이미지 Bitmap 변환 실패")
+                }
 
                 // 임시 파일 삭제
                 photoFile.delete()
             } catch (e: Exception) {
+                println("❌ 카메라 이미지 처리 오류: ${e.message}")
                 e.printStackTrace()
             }
+        } else {
+            println("❌ 카메라 촬영 실패")
         }
     }
 
@@ -117,6 +135,8 @@ fun ImageUploadArea(
         } else {
             permissions[Manifest.permission.READ_EXTERNAL_STORAGE] ?: false
         }
+
+        println("🔒 권한 결과 - 카메라: $cameraGranted, 저장소: $storageGranted")
 
         if (cameraGranted || storageGranted) {
             showImagePicker = true
@@ -140,6 +160,7 @@ fun ImageUploadArea(
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable {
+                println("🖼️ 이미지 영역 클릭됨")
                 // 권한 체크
                 val cameraPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
                 val storagePermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -147,6 +168,8 @@ fun ImageUploadArea(
                 } else {
                     ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
                 }
+
+                println("🔒 현재 권한 - 카메라: ${cameraPermission == PackageManager.PERMISSION_GRANTED}, 저장소: ${storagePermission == PackageManager.PERMISSION_GRANTED}")
 
                 if (cameraPermission == PackageManager.PERMISSION_GRANTED ||
                     storagePermission == PackageManager.PERMISSION_GRANTED) {
@@ -164,15 +187,14 @@ fun ImageUploadArea(
                             permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
                         }
                     }
+                    println("🔒 권한 요청: ${permissions.joinToString()}")
                     permissionLauncher.launch(permissions.toTypedArray())
                 }
             },
         contentAlignment = Alignment.Center
     ) {
-// AsyncImage 부분을 다음과 같이 수정:
-
         if (imageUrl.isEmpty()) {
-            // 이미지가 없을 때 (기존 코드 그대로)
+            // 이미지가 없을 때
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -194,39 +216,76 @@ fun ImageUploadArea(
                 )
             }
         } else {
-            // 이미지가 있을 때 - Base64 처리 개선
+            // 이미지가 있을 때 - Base64와 URL 모두 처리
             if (imageUrl.startsWith("data:image")) {
                 // Base64 이미지인 경우
-                val base64Data = imageUrl.substringAfter("base64,")
-                val imageBytes = Base64.decode(base64Data, Base64.DEFAULT)
-                val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+                var hasError by remember { mutableStateOf(false) }
+
+                LaunchedEffect(imageUrl) {
+                    try {
+                        println("🖼️ Base64 이미지 표시 시도")
+                        val base64Data = imageUrl.substringAfter("base64,")
+                        val imageBytes = Base64.decode(base64Data, Base64.DEFAULT)
+                        val decodedBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+                        if (decodedBitmap != null) {
+                            println("🖼️ Base64 이미지 표시 성공")
+                            bitmap = decodedBitmap
+                            hasError = false
+                        } else {
+                            println("❌ Base64 Bitmap 생성 실패")
+                            hasError = true
+                        }
+                    } catch (e: Exception) {
+                        println("❌ Base64 디코딩 오류: ${e.message}")
+                        hasError = true
+                    }
+                }
 
                 if (bitmap != null) {
                     Image(
-                        bitmap = bitmap.asImageBitmap(),
+                        bitmap = bitmap!!.asImageBitmap(),
                         contentDescription = "선택된 이미지",
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop
                     )
-                } else {
-                    // Bitmap 생성 실패 시 placeholder
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                } else if (hasError) {
+                    // 에러 상태 표시
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Text("이미지 로드 실패", color = MaterialTheme.colorScheme.error)
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "이미지 오류",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            text = "이미지 로드 실패",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
+                } else {
+                    // 로딩 상태
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             } else {
-                // 일반 URL인 경우 (기존 코드)
+                // 일반 URL인 경우
+                println("🖼️ URL 이미지 표시: $imageUrl")
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl)
                         .crossfade(true)
                         .build(),
-                    contentDescription = "선택된 이미지",
+                    contentDescription = "메뉴 이미지",
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(12.dp)),
@@ -234,7 +293,7 @@ fun ImageUploadArea(
                 )
             }
 
-            // 오버레이 (기존 코드 그대로)
+            // 이미지 변경 오버레이
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -260,11 +319,18 @@ fun ImageUploadArea(
     // 이미지 선택 다이얼로그
     ImagePickerDialog(
         isVisible = showImagePicker,
-        onDismiss = { showImagePicker = false },
+        onDismiss = {
+            showImagePicker = false
+            println("🖼️ 이미지 선택 다이얼로그 닫힘")
+        },
         onCameraSelected = {
+            println("🖼️ 카메라 선택됨")
+            showImagePicker = false
             cameraLauncher.launch(photoUri)
         },
         onGallerySelected = {
+            println("🖼️ 갤러리 선택됨")
+            showImagePicker = false
             galleryLauncher.launch("image/*")
         }
     )

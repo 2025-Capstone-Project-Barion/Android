@@ -31,12 +31,12 @@ import com.example.menu.viewmodel.MenuViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddMenuScreen(
-    selectedCategoryId: Long? = null,  // 미리 선택된 카테고리 (카테고리 상세에서 온 경우)
+    selectedCategoryId: Long? = null,
     viewModel: MenuViewModel,
     onNavigateBack: () -> Unit = {}
 ) {
-    // State 구독
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // 폼 상태들
     var menuName by remember { mutableStateOf("") }
@@ -44,22 +44,39 @@ fun AddMenuScreen(
     var description by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(selectedCategoryId ?: 0L) }
     var imageUrl by remember { mutableStateOf("") }
-    var selectedBase64Image by remember { mutableStateOf<String?>(null) }  // 추가
+    var selectedBase64Image by remember { mutableStateOf<String?>(null) }
 
     // 에러 상태들
     var nameError by remember { mutableStateOf("") }
     var priceError by remember { mutableStateOf("") }
     var categoryError by remember { mutableStateOf("") }
 
-    // Effect 처리
+    // Effect 처리 - 성공/에러 메시지 표시 후 화면 닫기
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is MenuEffect.MenuAddedSuccessfully -> {
-                    onNavigateBack()  // 성공 시 뒤로가기
+                    // 성공 메시지 표시
+                    snackbarHostState.showSnackbar(
+                        message = "메뉴가 추가되었습니다",
+                        duration = SnackbarDuration.Short
+                    )
+                    // 즉시 화면 닫기 (delay 제거)
+                    onNavigateBack()
                 }
                 is MenuEffect.ShowError -> {
-                    // TODO: 토스트 메시지 또는 스낵바 표시
+                    // 에러 메시지 표시
+                    snackbarHostState.showSnackbar(
+                        message = effect.error,
+                        duration = SnackbarDuration.Long
+                    )
+                }
+                is MenuEffect.ShowToast -> {
+                    // 토스트 메시지 표시
+                    snackbarHostState.showSnackbar(
+                        message = effect.message,
+                        duration = SnackbarDuration.Short
+                    )
                 }
                 else -> {}
             }
@@ -67,6 +84,7 @@ fun AddMenuScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("메뉴 추가") },
@@ -114,7 +132,7 @@ fun AddMenuScreen(
                                         categoryId = selectedCategory,
                                         description = description.trim(),
                                         imageUrl = imageUrl,
-                                        base64Image = selectedBase64Image  // 추가
+                                        base64Image = selectedBase64Image
                                     )
                                 )
                             }
@@ -151,12 +169,21 @@ fun AddMenuScreen(
             },
             categoryError = categoryError,
             categories = state.categories,
-            imageUrl = imageUrl,
-            onImageChange = { imageUrl = it },
-            selectedBase64Image = selectedBase64Image,  // 추가
-            onBase64ImageChange = { base64 ->  // 추가
-                println("🖼️ ImageUpload - 이미지 선택됨: ${base64?.take(50) ?: "null"}...")
-                selectedBase64Image = base64
+            // ✅ Base64 이미지를 우선적으로 표시
+            imageUrl = if (selectedBase64Image != null) selectedBase64Image!! else imageUrl,
+            onImageChange = { newImageData ->
+                println("🖼️ ImageUploadArea - 이미지 받음: ${newImageData.take(50)}...")
+
+                if (newImageData.startsWith("data:image")) {
+                    // Base64 이미지인 경우
+                    selectedBase64Image = newImageData
+                    println("🖼️ Base64 데이터 저장됨")
+                } else {
+                    // 일반 URL인 경우
+                    imageUrl = newImageData
+                    selectedBase64Image = null // Base64 초기화
+                    println("🖼️ URL 저장됨: $newImageData")
+                }
             },
             modifier = Modifier.padding(paddingValues)
         )
@@ -182,8 +209,6 @@ private fun AddMenuContent(
     categories: List<com.example.domain.model.Category>,
     imageUrl: String,
     onImageChange: (String) -> Unit,
-    selectedBase64Image: String?,  // 추가
-    onBase64ImageChange: (String?) -> Unit,  // 추가
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -193,22 +218,10 @@ private fun AddMenuContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 이미지 업로드 영역
+        // 이미지 업로드 영역 - Base64 이미지도 표시 가능
         ImageUploadArea(
-            imageUrl = imageUrl,
-            onImageSelected = { base64OrUrl ->
-                println("🖼️ ImageUploadArea - 이미지 받음: ${base64OrUrl.take(50)}...")
-
-                if (base64OrUrl.startsWith("data:image")) {
-                    // Base64 이미지인 경우
-                    onBase64ImageChange(base64OrUrl)  // base64 데이터 저장
-                    println("🖼️ Base64 데이터 저장됨")
-                } else {
-                    // 일반 URL인 경우
-                    onImageChange(base64OrUrl)  // URL 저장
-                    println("🖼️ URL 저장됨: $base64OrUrl")
-                }
-            },
+            imageUrl = imageUrl, // Base64 또는 URL
+            onImageSelected = onImageChange,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -253,7 +266,7 @@ private fun AddMenuContent(
         // 설명
         OutlinedTextField(
             value = description,
-            onValueChange = onDescriptionChange,  // 수정: onDescriptionChange → onValueChange
+            onValueChange = onDescriptionChange,
             label = { Text("설명") },
             placeholder = { Text("메뉴 설명 입력") },
             modifier = Modifier

@@ -33,4 +33,12 @@ sealed interface MenuIntent {
 
     // UI 상태 변경
     object ClearError : MenuIntent
+
+
+    // 메뉴 이미지 수정
+    data class UpdateMenuWithImage(
+        val menu: com.example.domain.model.Menu,
+        val base64Image: String?
+    ) : MenuIntent
+
 }

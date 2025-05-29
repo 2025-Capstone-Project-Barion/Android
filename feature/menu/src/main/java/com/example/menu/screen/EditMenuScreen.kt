@@ -25,6 +25,7 @@ import com.example.menu.viewmodel.MenuViewModel
  * - 기존 메뉴 정보로 폼 초기화
  * - 메뉴 정보 수정
  * - 입력 검증
+ * - 이미지 수정 지원
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +36,7 @@ fun EditMenuScreen(
 ) {
     // State 구독
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // 수정할 메뉴 찾기
     val menuToEdit = remember(state.menusByCategory, menuId) {
@@ -47,21 +49,39 @@ fun EditMenuScreen(
     var description by remember(menuToEdit) { mutableStateOf(menuToEdit?.description ?: "") }
     var selectedCategory by remember(menuToEdit) { mutableStateOf(menuToEdit?.categoryId ?: 0L) }
     var imageUrl by remember(menuToEdit) { mutableStateOf(menuToEdit?.imageUrl ?: "") }
+    var selectedBase64Image by remember { mutableStateOf<String?>(null) }
 
     // 에러 상태들
     var nameError by remember { mutableStateOf("") }
     var priceError by remember { mutableStateOf("") }
     var categoryError by remember { mutableStateOf("") }
 
-    // Effect 처리
+    // Effect 처리 - 성공/에러 메시지 표시
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is MenuEffect.MenuUpdatedSuccessfully -> {
-                    onNavigateBack()  // 성공 시 뒤로가기
+                    // 성공 메시지 표시
+                    snackbarHostState.showSnackbar(
+                        message = "메뉴가 수정되었습니다",
+                        duration = SnackbarDuration.Short
+                    )
+                    // 즉시 화면 닫기
+                    onNavigateBack()
                 }
                 is MenuEffect.ShowError -> {
-                    // TODO: 토스트 메시지 또는 스낵바 표시
+                    // 에러 메시지 표시
+                    snackbarHostState.showSnackbar(
+                        message = effect.error,
+                        duration = SnackbarDuration.Long
+                    )
+                }
+                is MenuEffect.ShowToast -> {
+                    // 토스트 메시지 표시
+                    snackbarHostState.showSnackbar(
+                        message = effect.message,
+                        duration = SnackbarDuration.Short
+                    )
                 }
                 else -> {}
             }
@@ -90,6 +110,7 @@ fun EditMenuScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("메뉴 수정") },
@@ -133,9 +154,21 @@ fun EditMenuScreen(
                                     price = priceValue!!,
                                     categoryId = selectedCategory,
                                     description = description.trim(),
-                                    imageUrl = imageUrl
+                                    imageUrl = if (selectedBase64Image != null) "" else imageUrl
                                 )
-                                viewModel.handleIntent(MenuIntent.UpdateMenu(updatedMenu))
+
+                                // Base64 이미지 여부에 따라 다른 Intent 사용
+                                if (selectedBase64Image != null) {
+                                    // 이미지가 변경된 경우 - Base64 포함 수정
+                                    println("🖼️ 수정 - 이미지 변경됨: ${selectedBase64Image!!.take(50)}...")
+                                    viewModel.handleIntent(
+                                        MenuIntent.UpdateMenuWithImage(updatedMenu, selectedBase64Image)
+                                    )
+                                } else {
+                                    // 이미지 변경 없는 경우 - 기존 수정
+                                    println("🖼️ 수정 - 이미지 변경 없음")
+                                    viewModel.handleIntent(MenuIntent.UpdateMenu(updatedMenu))
+                                }
                             }
                         }
                     ) {
@@ -170,8 +203,21 @@ fun EditMenuScreen(
             },
             categoryError = categoryError,
             categories = state.categories,
-            imageUrl = imageUrl,
-            onImageChange = { imageUrl = it },
+            imageUrl = if (selectedBase64Image != null) selectedBase64Image!! else imageUrl, // Base64 우선 표시
+            onImageChange = { newImageData ->
+                println("🖼️ 수정 - 이미지 데이터 받음: ${newImageData.take(50)}...")
+
+                if (newImageData.startsWith("data:image")) {
+                    // Base64 이미지인 경우
+                    selectedBase64Image = newImageData
+                    println("🖼️ 수정 - Base64 저장됨")
+                } else {
+                    // URL인 경우
+                    imageUrl = newImageData
+                    selectedBase64Image = null // Base64 초기화
+                    println("🖼️ 수정 - URL 저장됨: $newImageData")
+                }
+            },
             modifier = Modifier.padding(paddingValues)
         )
     }

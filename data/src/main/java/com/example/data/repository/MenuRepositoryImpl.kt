@@ -3,6 +3,8 @@ package com.example.data.repository
 import android.util.Log
 import com.example.data.api.CategoryApi
 import com.example.data.api.MenuApi
+import com.example.data.dto.CategoryCreateRequest
+import com.example.data.dto.CategoryDto
 import com.example.data.mapper.toDomain
 import com.example.data.mapper.toCategoryDomainList
 import com.example.data.mapper.toMenuDomainList
@@ -15,7 +17,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import com.example.data.dto.MenuPageResponse
 import com.example.data.dto.MenuDto
+import kotlinx.serialization.json.Json
 import retrofit2.Response
+// 필요한 import도 추가
+import okhttp3.OkHttpClient
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+// 필요한 import 추가
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import java.util.concurrent.TimeUnit
+
 /**
  * MenuRepository 구현체
  * - 실제 API와 연동하여 메뉴/카테고리 데이터 관리
@@ -73,48 +85,73 @@ class MenuRepositoryImpl @Inject constructor(
      * 새 카테고리 추가
      * 기존: 임시 카테고리 생성 → 변경: 실제 API 호출
      */
-    /**
-     * 새 카테고리 추가
-     * 기존: 임시 카테고리 생성 → 변경: 실제 API 호출
-     */
     override suspend fun addCategory(name: String): Result<Category> {
         return try {
-            Log.d(TAG, "📁 카테고리 추가 시작: $name")
+            Log.d(TAG, "📁 카테고리 추가 (ID 포함): $name")
 
-            // 임시 ID 생성 (서버에서 실제 ID 할당)
+            // 먼저 기존 카테고리들을 조회해서 다음 ID 계산
+            val existingCategories = getCategories().getOrElse { emptyList() }
+            val nextId = if (existingCategories.isNotEmpty()) {
+                existingCategories.maxOf { it.id } + 1
+            } else {
+                1L
+            }
+
             val tempCategory = Category(
-                id = 0, // 서버에서 할당받을 예정
+                id = nextId,  // 계산된 다음 ID 사용
                 name = name,
-                order = 999, // 임시 순서
+                order = 999,
                 isDefault = false,
                 menuCount = 0
             )
 
             val request = tempCategory.toCreateRequest()
-            Log.d(TAG, "📁 요청 데이터: $request")
+            Log.d(TAG, "📁 요청 데이터 (ID 포함): $request")
 
-            val response = categoryApi.createCategory(request)
-            Log.d(TAG, "📁 서버 응답 코드: ${response.code()}")
-            Log.d(TAG, "📁 서버 응답 메시지: ${response.message()}")
+            val client = OkHttpClient.Builder()
+                .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+
+            val json = """{"categoryId":${nextId},"categoryName":"$name"}"""
+            Log.d(TAG, "📁 전송할 JSON: $json")
+
+            val requestBody = json.toRequestBody("application/json; charset=utf-8".toMediaType())
+
+            val httpRequest = okhttp3.Request.Builder()
+                .url("http://13.209.99.95:8080/api/categories")
+                .post(requestBody)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .addHeader("User-Agent", "Barrion-Android-Manual")
+                .build()
+
+            val response = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                client.newCall(httpRequest).execute()
+            }
+
+            Log.d(TAG, "📁 응답 코드: ${response.code}")
+            Log.d(TAG, "📁 응답 성공 여부: ${response.isSuccessful}")
 
             if (response.isSuccessful) {
-                val createdCategory = response.body()?.toDomain()
-                    ?: throw Exception("서버 응답이 비어있습니다")
-                Log.d(TAG, "✅ 카테고리 생성 성공: $createdCategory")
-                Result.success(createdCategory)
-            } else {
-                // 에러 바디도 확인
-                val errorBody = response.errorBody()?.string()
-                Log.e(TAG, "❌ 카테고리 생성 실패")
-                Log.e(TAG, "❌ 응답 코드: ${response.code()}")
-                Log.e(TAG, "❌ 응답 메시지: ${response.message()}")
-                Log.e(TAG, "❌ 에러 바디: $errorBody")
+                val responseBody = response.body?.string() ?: ""
+                Log.d(TAG, "✅ 카테고리 생성 성공: $responseBody")
 
-                Result.failure(Exception("카테고리 생성 실패: ${response.code()} - ${response.message()}"))
+                val jsonParser = Json { ignoreUnknownKeys = true }
+                val categoryDto = jsonParser.decodeFromString<CategoryDto>(responseBody)
+                val category = categoryDto.toDomain()
+
+                Result.success(category)
+            } else {
+                val errorBody = response.body?.string() ?: ""
+                Log.e(TAG, "❌ 카테고리 생성 실패: ${response.code} - $errorBody")
+                Result.failure(Exception("카테고리 생성 실패: ${response.code} - $errorBody"))
             }
+
         } catch (e: Exception) {
-            Log.e(TAG, "💥 카테고리 생성 중 예외 발생: ${e.message}", e)
-            Result.failure(Exception("카테고리 생성 중 네트워크 오류: ${e.message}"))
+            Log.e(TAG, "💥 카테고리 생성 중 예외: ${e.message}", e)
+            Result.failure(e)
         }
     }
 
@@ -124,15 +161,42 @@ class MenuRepositoryImpl @Inject constructor(
      */
     override suspend fun deleteCategory(categoryId: Long): Result<Unit> {
         return try {
-            // 실제 API 호출
-            val response = categoryApi.deleteCategory(categoryId)
+            Log.d(TAG, "🗑️ 카테고리 삭제: $categoryId")
+
+            val client = OkHttpClient.Builder()
+                .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+
+            val request = okhttp3.Request.Builder()
+                .url("http://13.209.99.95:8080/api/categories/$categoryId")
+                .delete()
+                .addHeader("Accept", "application/json")
+                .addHeader("User-Agent", "Barrion-Android-Manual")
+                .build()
+
+            Log.d(TAG, "🗑️ 삭제 요청 URL: ${request.url}")
+            Log.d(TAG, "🗑️ 삭제 요청 메서드: ${request.method}")
+
+            val response = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                client.newCall(request).execute()
+            }
+
+            Log.d(TAG, "🗑️ 삭제 응답 코드: ${response.code}")
+            Log.d(TAG, "🗑️ 삭제 응답 성공 여부: ${response.isSuccessful}")
 
             if (response.isSuccessful) {
+                Log.d(TAG, "✅ 카테고리 삭제 성공")
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("카테고리 삭제 실패: ${response.code()} - ${response.message()}"))
+                val errorBody = response.body?.string() ?: ""
+                Log.e(TAG, "❌ 카테고리 삭제 실패: ${response.code} - $errorBody")
+                Result.failure(Exception("카테고리 삭제 실패: ${response.code} - $errorBody"))
             }
+
         } catch (e: Exception) {
+            Log.e(TAG, "💥 카테고리 삭제 중 예외: ${e.message}", e)
             Result.failure(Exception("카테고리 삭제 중 네트워크 오류: ${e.message}"))
         }
     }
@@ -202,7 +266,7 @@ class MenuRepositoryImpl @Inject constructor(
      * 새 메뉴 추가
      * 기존: 임시 ID 할당 → 변경: 실제 API 호출
      */
-    override suspend fun addMenu(menu: Menu, base64Image: String?): Result<Menu> {  // = null 제거
+    override suspend fun addMenu(menu: Menu, base64Image: String?): Result<Menu> {
         return try {
             Log.d(TAG, "📱 메뉴 추가 시작: ${menu.name}")
             Log.d(TAG, "🖼️ Base64 이미지: ${base64Image?.take(50) ?: "없음"}...")
@@ -229,24 +293,61 @@ class MenuRepositoryImpl @Inject constructor(
     }
 
     /**
-     * 메뉴 정보 수정
+     * 메뉴 정보 수정 (이미지 없음)
      * 기존: 임시 리스트 수정 → 변경: 실제 API 호출
      */
     override suspend fun updateMenu(menu: Menu): Result<Menu> {
         return try {
-            // base64Image 없이 메뉴 수정 (임시)
+            Log.d(TAG, "📱 메뉴 수정 (이미지 없음): ${menu.name}")
+
+            // base64Image 없이 메뉴 수정
             val request = menu.toUpdateRequest(base64Image = null)
             val response = menuApi.updateMenu(menu.id, request)
 
             if (response.isSuccessful) {
                 val updatedMenu = response.body()?.toDomain()
                     ?: throw Exception("서버 응답이 비어있습니다")
+                Log.d(TAG, "✅ 메뉴 수정 성공: ${updatedMenu.name}")
                 Result.success(updatedMenu)
             } else {
-                Result.failure(Exception("메뉴 수정 실패: ${response.code()} - ${response.message()}"))
+                val error = "메뉴 수정 실패: ${response.code()} - ${response.message()}"
+                Log.e(TAG, "❌ $error")
+                Result.failure(Exception(error))
             }
         } catch (e: Exception) {
-            Result.failure(Exception("메뉴 수정 중 네트워크 오류: ${e.message}"))
+            val error = "메뉴 수정 중 네트워크 오류: ${e.message}"
+            Log.e(TAG, "💥 $error", e)
+            Result.failure(Exception(error))
+        }
+    }
+
+    /**
+     * 메뉴 정보 수정 (이미지 포함)
+     * 새로 추가된 메서드 - Base64 이미지와 함께 메뉴 수정
+     */
+    override suspend fun updateMenuWithImage(menu: Menu, base64Image: String): Result<Menu> {
+        return try {
+            Log.d(TAG, "📱 메뉴 수정 (이미지 포함): ${menu.name}")
+            Log.d(TAG, "🖼️ Base64 이미지: ${base64Image.take(50)}...")
+
+            // base64Image와 함께 메뉴 수정
+            val request = menu.toUpdateRequest(base64Image = base64Image)
+            val response = menuApi.updateMenu(menu.id, request)
+
+            if (response.isSuccessful) {
+                val updatedMenu = response.body()?.toDomain()
+                    ?: throw Exception("서버 응답이 비어있습니다")
+                Log.d(TAG, "✅ 이미지 포함 메뉴 수정 성공: ${updatedMenu.name}")
+                Result.success(updatedMenu)
+            } else {
+                val error = "이미지 포함 메뉴 수정 실패: ${response.code()} - ${response.message()}"
+                Log.e(TAG, "❌ $error")
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            val error = "이미지 포함 메뉴 수정 중 네트워크 오류: ${e.message}"
+            Log.e(TAG, "💥 $error", e)
+            Result.failure(Exception(error))
         }
     }
 
@@ -256,21 +357,23 @@ class MenuRepositoryImpl @Inject constructor(
      */
     override suspend fun deleteMenu(menuId: Long): Result<Unit> {
         return try {
+            Log.d(TAG, "🗑️ 메뉴 삭제: $menuId")
+
             // 실제 API 호출
             val response = menuApi.deleteMenu(menuId)
 
             if (response.isSuccessful) {
+                Log.d(TAG, "✅ 메뉴 삭제 성공")
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("메뉴 삭제 실패: ${response.code()} - ${response.message()}"))
+                val error = "메뉴 삭제 실패: ${response.code()} - ${response.message()}"
+                Log.e(TAG, "❌ $error")
+                Result.failure(Exception(error))
             }
         } catch (e: Exception) {
-            Result.failure(Exception("메뉴 삭제 중 네트워크 오류: ${e.message}"))
+            val error = "메뉴 삭제 중 네트워크 오류: ${e.message}"
+            Log.e(TAG, "💥 $error", e)
+            Result.failure(Exception(error))
         }
     }
-
-    // TODO: 이미지 업로드 기능을 위한 추가 메서드들
-    // 향후 Repository 인터페이스에 추가 필요:
-    // suspend fun addMenuWithImage(menu: Menu, base64Image: String): Result<Menu>
-    // suspend fun updateMenuWithImage(menu: Menu, base64Image: String?): Result<Menu>
 }
