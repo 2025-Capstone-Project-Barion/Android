@@ -169,12 +169,21 @@ fun AddMenuScreen(
             },
             categoryError = categoryError,
             categories = state.categories,
-            imageUrl = imageUrl,
-            onImageChange = { imageUrl = it },
-            selectedBase64Image = selectedBase64Image,
-            onBase64ImageChange = { base64 ->
-                println("🖼️ ImageUpload - 이미지 선택됨: ${base64?.take(50) ?: "null"}...")
-                selectedBase64Image = base64
+            // ✅ Base64 이미지를 우선적으로 표시
+            imageUrl = if (selectedBase64Image != null) selectedBase64Image!! else imageUrl,
+            onImageChange = { newImageData ->
+                println("🖼️ ImageUploadArea - 이미지 받음: ${newImageData.take(50)}...")
+
+                if (newImageData.startsWith("data:image")) {
+                    // Base64 이미지인 경우
+                    selectedBase64Image = newImageData
+                    println("🖼️ Base64 데이터 저장됨")
+                } else {
+                    // 일반 URL인 경우
+                    imageUrl = newImageData
+                    selectedBase64Image = null // Base64 초기화
+                    println("🖼️ URL 저장됨: $newImageData")
+                }
             },
             modifier = Modifier.padding(paddingValues)
         )
@@ -200,8 +209,6 @@ private fun AddMenuContent(
     categories: List<com.example.domain.model.Category>,
     imageUrl: String,
     onImageChange: (String) -> Unit,
-    selectedBase64Image: String?,
-    onBase64ImageChange: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -211,22 +218,10 @@ private fun AddMenuContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 이미지 업로드 영역
+        // 이미지 업로드 영역 - Base64 이미지도 표시 가능
         ImageUploadArea(
-            imageUrl = imageUrl,
-            onImageSelected = { base64OrUrl ->
-                println("🖼️ ImageUploadArea - 이미지 받음: ${base64OrUrl.take(50)}...")
-
-                if (base64OrUrl.startsWith("data:image")) {
-                    // Base64 이미지인 경우
-                    onBase64ImageChange(base64OrUrl)  // base64 데이터 저장
-                    println("🖼️ Base64 데이터 저장됨")
-                } else {
-                    // 일반 URL인 경우
-                    onImageChange(base64OrUrl)  // URL 저장
-                    println("🖼️ URL 저장됨: $base64OrUrl")
-                }
-            },
+            imageUrl = imageUrl, // Base64 또는 URL
+            onImageSelected = onImageChange,
             modifier = Modifier.fillMaxWidth()
         )
 
