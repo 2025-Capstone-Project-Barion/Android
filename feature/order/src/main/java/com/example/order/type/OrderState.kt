@@ -1,39 +1,29 @@
 package com.example.order.type
 
-import java.time.LocalDateTime
+import com.example.domain.model.Order
+import com.example.domain.model.OrderSummary
 
 data class OrderState(
     val orders: List<Order> = emptyList(),
-    val selectedOrder: Order? = null,
+    val summary: OrderSummary = OrderSummary(0, 0, 0),
     val isLoading: Boolean = false,
     val error: String? = null
 ) {
-    val pendingOrders: List<Order>
-        get() = orders.filter { it.status == OrderStatus.PENDING }
+    // 주문 목록이 비어있는지 확인
+    val isEmpty: Boolean
+        get() = !isLoading && orders.isEmpty()
 
-    val preparingOrders: List<Order>
-        get() = orders.filter { it.status == OrderStatus.PREPARING }
+    // 주문 목록에서 자동으로 요약 정보 계산
+    fun calculateSummary(): OrderSummary {
+        val validOrders = orders.filter { it.totalAmount > 0 } // 환불 제외
+        val completedCount = validOrders.size
+        val totalCount = orders.size
+        val totalAmount = validOrders.sumOf { it.totalAmount }
 
-    val readyOrders: List<Order>
-        get() = orders.filter { it.status == OrderStatus.READY }
-}
-
-data class Order(
-    val id: String,
-    val tableNumber: Int,
-    val items: List<OrderItem>,
-    val status: OrderStatus,
-    val totalAmount: Int,
-    val createdAt: LocalDateTime
-)
-
-data class OrderItem(
-    val menuItemId: String,
-    val menuItemName: String,
-    val quantity: Int,
-    val unitPrice: Int
-)
-
-enum class OrderStatus {
-    PENDING, PREPARING, READY, COMPLETED, CANCELLED
+        return OrderSummary(
+            completedCount = completedCount,
+            totalCount = totalCount,
+            totalAmount = totalAmount
+        )
+    }
 }
