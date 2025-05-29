@@ -27,6 +27,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import java.util.concurrent.TimeUnit
+
 /**
  * MenuRepository 구현체
  * - 실제 API와 연동하여 메뉴/카테고리 데이터 관리
@@ -80,10 +81,6 @@ class MenuRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * 새 카테고리 추가
-     * 기존: 임시 카테고리 생성 → 변경: 실제 API 호출
-     */
     /**
      * 새 카테고리 추가
      * 기존: 임시 카테고리 생성 → 변경: 실제 API 호출
@@ -157,12 +154,11 @@ class MenuRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
     /**
      * 카테고리 삭제
      * 기존: 성공만 반환 → 변경: 실제 API 호출
      */
-
-    // 3. MenuRepositoryImpl.kt의 deleteCategory 수정
     override suspend fun deleteCategory(categoryId: Long): Result<Unit> {
         return try {
             Log.d(TAG, "🗑️ 카테고리 삭제: $categoryId")
@@ -270,7 +266,7 @@ class MenuRepositoryImpl @Inject constructor(
      * 새 메뉴 추가
      * 기존: 임시 ID 할당 → 변경: 실제 API 호출
      */
-    override suspend fun addMenu(menu: Menu, base64Image: String?): Result<Menu> {  // = null 제거
+    override suspend fun addMenu(menu: Menu, base64Image: String?): Result<Menu> {
         return try {
             Log.d(TAG, "📱 메뉴 추가 시작: ${menu.name}")
             Log.d(TAG, "🖼️ Base64 이미지: ${base64Image?.take(50) ?: "없음"}...")
@@ -297,24 +293,61 @@ class MenuRepositoryImpl @Inject constructor(
     }
 
     /**
-     * 메뉴 정보 수정
+     * 메뉴 정보 수정 (이미지 없음)
      * 기존: 임시 리스트 수정 → 변경: 실제 API 호출
      */
     override suspend fun updateMenu(menu: Menu): Result<Menu> {
         return try {
-            // base64Image 없이 메뉴 수정 (임시)
+            Log.d(TAG, "📱 메뉴 수정 (이미지 없음): ${menu.name}")
+
+            // base64Image 없이 메뉴 수정
             val request = menu.toUpdateRequest(base64Image = null)
             val response = menuApi.updateMenu(menu.id, request)
 
             if (response.isSuccessful) {
                 val updatedMenu = response.body()?.toDomain()
                     ?: throw Exception("서버 응답이 비어있습니다")
+                Log.d(TAG, "✅ 메뉴 수정 성공: ${updatedMenu.name}")
                 Result.success(updatedMenu)
             } else {
-                Result.failure(Exception("메뉴 수정 실패: ${response.code()} - ${response.message()}"))
+                val error = "메뉴 수정 실패: ${response.code()} - ${response.message()}"
+                Log.e(TAG, "❌ $error")
+                Result.failure(Exception(error))
             }
         } catch (e: Exception) {
-            Result.failure(Exception("메뉴 수정 중 네트워크 오류: ${e.message}"))
+            val error = "메뉴 수정 중 네트워크 오류: ${e.message}"
+            Log.e(TAG, "💥 $error", e)
+            Result.failure(Exception(error))
+        }
+    }
+
+    /**
+     * 메뉴 정보 수정 (이미지 포함)
+     * 새로 추가된 메서드 - Base64 이미지와 함께 메뉴 수정
+     */
+    override suspend fun updateMenuWithImage(menu: Menu, base64Image: String): Result<Menu> {
+        return try {
+            Log.d(TAG, "📱 메뉴 수정 (이미지 포함): ${menu.name}")
+            Log.d(TAG, "🖼️ Base64 이미지: ${base64Image.take(50)}...")
+
+            // base64Image와 함께 메뉴 수정
+            val request = menu.toUpdateRequest(base64Image = base64Image)
+            val response = menuApi.updateMenu(menu.id, request)
+
+            if (response.isSuccessful) {
+                val updatedMenu = response.body()?.toDomain()
+                    ?: throw Exception("서버 응답이 비어있습니다")
+                Log.d(TAG, "✅ 이미지 포함 메뉴 수정 성공: ${updatedMenu.name}")
+                Result.success(updatedMenu)
+            } else {
+                val error = "이미지 포함 메뉴 수정 실패: ${response.code()} - ${response.message()}"
+                Log.e(TAG, "❌ $error")
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            val error = "이미지 포함 메뉴 수정 중 네트워크 오류: ${e.message}"
+            Log.e(TAG, "💥 $error", e)
+            Result.failure(Exception(error))
         }
     }
 
@@ -324,21 +357,23 @@ class MenuRepositoryImpl @Inject constructor(
      */
     override suspend fun deleteMenu(menuId: Long): Result<Unit> {
         return try {
+            Log.d(TAG, "🗑️ 메뉴 삭제: $menuId")
+
             // 실제 API 호출
             val response = menuApi.deleteMenu(menuId)
 
             if (response.isSuccessful) {
+                Log.d(TAG, "✅ 메뉴 삭제 성공")
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("메뉴 삭제 실패: ${response.code()} - ${response.message()}"))
+                val error = "메뉴 삭제 실패: ${response.code()} - ${response.message()}"
+                Log.e(TAG, "❌ $error")
+                Result.failure(Exception(error))
             }
         } catch (e: Exception) {
-            Result.failure(Exception("메뉴 삭제 중 네트워크 오류: ${e.message}"))
+            val error = "메뉴 삭제 중 네트워크 오류: ${e.message}"
+            Log.e(TAG, "💥 $error", e)
+            Result.failure(Exception(error))
         }
     }
-
-    // TODO: 이미지 업로드 기능을 위한 추가 메서드들
-    // 향후 Repository 인터페이스에 추가 필요:
-    // suspend fun addMenuWithImage(menu: Menu, base64Image: String): Result<Menu>
-    // suspend fun updateMenuWithImage(menu: Menu, base64Image: String?): Result<Menu>
 }

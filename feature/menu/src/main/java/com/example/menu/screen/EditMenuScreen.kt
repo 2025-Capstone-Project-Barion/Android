@@ -25,6 +25,7 @@ import com.example.menu.viewmodel.MenuViewModel
  * - 기존 메뉴 정보로 폼 초기화
  * - 메뉴 정보 수정
  * - 입력 검증
+ * - 이미지 수정 지원
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +49,7 @@ fun EditMenuScreen(
     var description by remember(menuToEdit) { mutableStateOf(menuToEdit?.description ?: "") }
     var selectedCategory by remember(menuToEdit) { mutableStateOf(menuToEdit?.categoryId ?: 0L) }
     var imageUrl by remember(menuToEdit) { mutableStateOf(menuToEdit?.imageUrl ?: "") }
-    var selectedBase64Image by remember { mutableStateOf<String?>(null) } // Base64 이미지 추가
+    var selectedBase64Image by remember { mutableStateOf<String?>(null) }
 
     // 에러 상태들
     var nameError by remember { mutableStateOf("") }
@@ -153,14 +154,21 @@ fun EditMenuScreen(
                                     price = priceValue!!,
                                     categoryId = selectedCategory,
                                     description = description.trim(),
-                                    imageUrl = if (selectedBase64Image != null) "" else imageUrl // Base64가 있으면 URL 클리어
+                                    imageUrl = if (selectedBase64Image != null) "" else imageUrl
                                 )
 
-                                // Base64 이미지가 있으면 포함해서 수정 요청
-                                // 실제로는 UpdateMenuWithImage Intent가 필요할 수 있지만
-                                // 현재는 UpdateMenu Intent 사용
-                                println("🖼️ 수정 - Base64 이미지: ${selectedBase64Image?.take(50) ?: "없음"}")
-                                viewModel.handleIntent(MenuIntent.UpdateMenu(updatedMenu))
+                                // Base64 이미지 여부에 따라 다른 Intent 사용
+                                if (selectedBase64Image != null) {
+                                    // 이미지가 변경된 경우 - Base64 포함 수정
+                                    println("🖼️ 수정 - 이미지 변경됨: ${selectedBase64Image!!.take(50)}...")
+                                    viewModel.handleIntent(
+                                        MenuIntent.UpdateMenuWithImage(updatedMenu, selectedBase64Image)
+                                    )
+                                } else {
+                                    // 이미지 변경 없는 경우 - 기존 수정
+                                    println("🖼️ 수정 - 이미지 변경 없음")
+                                    viewModel.handleIntent(MenuIntent.UpdateMenu(updatedMenu))
+                                }
                             }
                         }
                     ) {
@@ -195,12 +203,20 @@ fun EditMenuScreen(
             },
             categoryError = categoryError,
             categories = state.categories,
-            imageUrl = imageUrl,
-            onImageChange = { imageUrl = it },
-            selectedBase64Image = selectedBase64Image,
-            onBase64ImageChange = { base64 ->
-                println("🖼️ 수정 - 이미지 선택됨: ${base64?.take(50) ?: "null"}")
-                selectedBase64Image = base64
+            imageUrl = if (selectedBase64Image != null) selectedBase64Image!! else imageUrl, // Base64 우선 표시
+            onImageChange = { newImageData ->
+                println("🖼️ 수정 - 이미지 데이터 받음: ${newImageData.take(50)}...")
+
+                if (newImageData.startsWith("data:image")) {
+                    // Base64 이미지인 경우
+                    selectedBase64Image = newImageData
+                    println("🖼️ 수정 - Base64 저장됨")
+                } else {
+                    // URL인 경우
+                    imageUrl = newImageData
+                    selectedBase64Image = null // Base64 초기화
+                    println("🖼️ 수정 - URL 저장됨: $newImageData")
+                }
             },
             modifier = Modifier.padding(paddingValues)
         )
@@ -226,8 +242,6 @@ private fun EditMenuContent(
     categories: List<com.example.domain.model.Category>,
     imageUrl: String,
     onImageChange: (String) -> Unit,
-    selectedBase64Image: String?, // 추가
-    onBase64ImageChange: (String?) -> Unit, // 추가
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -255,22 +269,10 @@ private fun EditMenuContent(
             }
         }
 
-        // 이미지 업로드 영역 - Base64 처리 추가
+        // 이미지 업로드 영역
         ImageUploadArea(
             imageUrl = imageUrl,
-            onImageSelected = { base64OrUrl ->
-                println("🖼️ 수정 - ImageUploadArea 이미지 받음: ${base64OrUrl.take(50)}...")
-
-                if (base64OrUrl.startsWith("data:image")) {
-                    // Base64 이미지인 경우
-                    onBase64ImageChange(base64OrUrl)
-                    println("🖼️ 수정 - Base64 데이터 저장됨")
-                } else {
-                    // 일반 URL인 경우
-                    onImageChange(base64OrUrl)
-                    println("🖼️ 수정 - URL 저장됨: $base64OrUrl")
-                }
-            },
+            onImageSelected = onImageChange,
             modifier = Modifier.fillMaxWidth()
         )
 

@@ -31,7 +31,7 @@ class MenuViewModel @Inject constructor(
     private val deleteMenuUseCase: DeleteMenuUseCase,
     private val addCategoryUseCase: AddCategoryUseCase,
     private val updateMenuUseCase: UpdateMenuUseCase,
-    private val deleteCategoryUseCase: DeleteCategoryUseCase  // 쉼표 추가
+    private val deleteCategoryUseCase: DeleteCategoryUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MenuState())
@@ -57,6 +57,7 @@ class MenuViewModel @Inject constructor(
             is MenuIntent.NavigateToCategoryDetail -> navigateToCategoryDetail(intent.categoryId)
             is MenuIntent.AddMenu -> addMenu(intent)
             is MenuIntent.UpdateMenu -> updateMenu(intent.menu)
+            is MenuIntent.UpdateMenuWithImage -> updateMenuWithImage(intent.menu, intent.base64Image)
             is MenuIntent.DeleteMenu -> deleteMenu(intent.menuId)
             is MenuIntent.AddCategory -> addCategory(intent.name)
             is MenuIntent.DeleteCategory -> deleteCategory(intent.categoryId)
@@ -153,7 +154,9 @@ class MenuViewModel @Inject constructor(
         }
     }
 
-    // MenuViewModel.kt의 addMenu 함수 수정
+    /**
+     * 메뉴 추가
+     */
     private fun addMenu(intent: MenuIntent.AddMenu) {
         viewModelScope.launch {
             println("📱 ViewModel - 메뉴 추가 요청")
@@ -183,17 +186,22 @@ class MenuViewModel @Inject constructor(
     }
 
     /**
-     * 메뉴 수정
+     * 메뉴 수정 (이미지 없음)
      */
     private fun updateMenu(menu: com.example.domain.model.Menu) {
         viewModelScope.launch {
+            println("📱 ViewModel - 메뉴 수정 요청 (이미지 없음)")
+            println("📱 메뉴 ID: ${menu.id}")
+
             updateMenuUseCase.execute(menu)
                 .onSuccess { updatedMenu ->
+                    println("✅ ViewModel - 메뉴 수정 성공: ${updatedMenu.name}")
                     _effect.emit(MenuEffect.MenuUpdatedSuccessfully)
                     _effect.emit(MenuEffect.ShowToast("메뉴가 수정되었습니다"))
                     loadMenus()
                 }
                 .onFailure { exception ->
+                    println("❌ ViewModel - 메뉴 수정 실패: ${exception.message}")
                     _effect.emit(MenuEffect.ShowError(
                         exception.message ?: "메뉴 수정 중 오류가 발생했습니다"
                     ))
@@ -201,14 +209,66 @@ class MenuViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 메뉴 수정 (이미지 포함)
+     */
+    private fun updateMenuWithImage(menu: com.example.domain.model.Menu, base64Image: String?) {
+        viewModelScope.launch {
+            println("📱 ViewModel - 이미지 포함 메뉴 수정 요청")
+            println("📱 메뉴 ID: ${menu.id}")
+            println("📱 base64 이미지: ${base64Image?.take(50) ?: "❌ NULL"}...")
+
+            if (base64Image != null) {
+                // 실제 이미지 포함 수정 호출
+                updateMenuUseCase.executeWithImage(menu, base64Image)
+                    .onSuccess { updatedMenu ->
+                        println("✅ ViewModel - 이미지 포함 메뉴 수정 성공: ${updatedMenu.name}")
+                        _effect.emit(MenuEffect.MenuUpdatedSuccessfully)
+                        _effect.emit(MenuEffect.ShowToast("메뉴가 수정되었습니다"))
+                        loadMenus()
+                    }
+                    .onFailure { exception ->
+                        println("❌ ViewModel - 이미지 포함 메뉴 수정 실패: ${exception.message}")
+                        _effect.emit(MenuEffect.ShowError(
+                            exception.message ?: "메뉴 수정 중 오류가 발생했습니다"
+                        ))
+                    }
+            } else {
+                // Base64가 null인 경우 기존 방식 사용
+                println("⚠️ ViewModel - Base64 이미지가 null이므로 기존 수정 방식 사용")
+                updateMenuUseCase.execute(menu)
+                    .onSuccess { updatedMenu ->
+                        println("✅ ViewModel - 메뉴 수정 성공 (이미지 없음): ${updatedMenu.name}")
+                        _effect.emit(MenuEffect.MenuUpdatedSuccessfully)
+                        _effect.emit(MenuEffect.ShowToast("메뉴가 수정되었습니다"))
+                        loadMenus()
+                    }
+                    .onFailure { exception ->
+                        println("❌ ViewModel - 메뉴 수정 실패: ${exception.message}")
+                        _effect.emit(MenuEffect.ShowError(
+                            exception.message ?: "메뉴 수정 중 오류가 발생했습니다"
+                        ))
+                    }
+            }
+        }
+    }
+
+    /**
+     * 메뉴 삭제
+     */
     private fun deleteMenu(menuId: Long) {
         viewModelScope.launch {
+            println("🗑️ ViewModel - 메뉴 삭제 시작: $menuId")
+
             deleteMenuUseCase.execute(menuId)
                 .onSuccess {
+                    println("✅ ViewModel - 메뉴 삭제 성공")
                     _effect.emit(MenuEffect.MenuDeletedSuccessfully)
+                    _effect.emit(MenuEffect.ShowToast("메뉴가 삭제되었습니다"))
                     loadMenus()
                 }
                 .onFailure { exception ->
+                    println("❌ ViewModel - 메뉴 삭제 실패: ${exception.message}")
                     _effect.emit(MenuEffect.ShowError(
                         exception.message ?: "메뉴 삭제 중 오류가 발생했습니다"
                     ))
