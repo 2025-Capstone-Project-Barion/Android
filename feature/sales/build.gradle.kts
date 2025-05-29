@@ -57,7 +57,8 @@ android {
 dependencies {
     // 코어 UI 모듈 의존성
     implementation(project(":core:ui"))
-
+    implementation(project(":domain"))
+    implementation(project(":core:common"))
     // Hilt 관련 추가 (커스텀 플러그인이 제공 안할 경우)
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")

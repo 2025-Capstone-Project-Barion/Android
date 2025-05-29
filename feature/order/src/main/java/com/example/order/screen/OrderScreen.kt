@@ -1,73 +1,224 @@
-package com.example.order.screen
-
-// feature/order/src/main/java/com/barrion/feature/order/screen/OrderScreen.kt
-
+// ui/screen/OrderScreen.kt
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.order.type.OrderEffect
+import com.example.order.type.OrderIntent
 import com.example.order.viewmodel.OrderViewModel
-
+import com.example.ui.theme.barrionColors
+import com.example.ui.theme.Spacing
+import com.example.ui.theme.CornerRadius
+import com.example.ui.components.buttons.BarrionNavigationButtons
 
 @Composable
 fun OrderScreen(
-    viewModel: OrderViewModel = viewModel()
+    viewModel: OrderViewModel,
+    modifier: Modifier = Modifier
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var orderToDelete by rememberSaveable { mutableIntStateOf(0) }
 
     // Effect 처리
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is OrderEffect.ShowToast -> {
-                    // Toast 처리
+                is OrderEffect.ShowError -> {
+                    // 에러 스낵바 또는 토스트 처리
                 }
-                is OrderEffect.NavigateToOrderDetail -> {
-                    // Navigation 처리
+                is OrderEffect.ShowDeleteSuccess -> {
+                    // 성공 메시지 처리
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.barrionColors.white)
+            .padding(Spacing.Medium)
+    ) {
+        // 상단 헤더 - 주문 관리만 가운데 표시
+        Text(
+            text = "주문 관리",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.barrionColors.grayBlack,
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .padding(bottom = Spacing.Large)
+        )
+
+        // 정산 현황 카드
+        if (state.summary != null) {
+            OrderSummaryCard(
+                summary = state.summary!!,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.Large))
+        }
+
+        // 주문 내역 제목 - 왼쪽 배치로 변경
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 왼쪽: 주문 내역 제목
+            Text(
+                text = "주문 내역",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.barrionColors.grayBlack,
+                fontWeight = FontWeight.Bold
+            )
+
+            // 오른쪽: 총 건수
+            Text(
+                text = "총 ${state.orders.size}건",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.barrionColors.grayMedium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Spacing.Medium))
+
+        // 주문 목록
+        when {
+            state.isLoading -> {
+                OrderLoadingState()
+            }
+
+            state.isEmpty -> {
+                OrderEmptyState()
+            }
+
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(state.orders) { order ->
+                        OrderListItem(
+                            order = order,
+                            onDeleteClick = { orderId ->
+                                orderToDelete = orderId
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "📋",
-                style = MaterialTheme.typography.displayLarge
-            )
-            Text(
-                text = "주문 관리",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                text = "실시간 주문 접수 및 처리 화면",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "개발 예정",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+    // 삭제 확인 다이얼로그
+    if (showDeleteDialog) {
+        OrderDeleteDialog(
+            orderNumber = orderToDelete.toString(),
+            onConfirm = {
+                viewModel.handleIntent(OrderIntent.DeleteOrder(orderToDelete))
+                showDeleteDialog = false
+            },
+            onDismiss = {
+                showDeleteDialog = false
+            }
+        )
     }
 }
 
-@Preview
 @Composable
-private fun OrderScreenPreview() {
-    MaterialTheme {
-        OrderScreen()
+private fun OrderLoadingState(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(Spacing.XXLarge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CircularProgressIndicator(
+            color = MaterialTheme.barrionColors.primaryBlue
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.Medium))
+
+        Text(
+            text = "주문 내역을 불러오는 중...",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.barrionColors.grayMedium
+        )
     }
+}
+
+@Composable
+private fun OrderEmptyState(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(Spacing.XXLarge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "주문 내역이 없습니다",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.barrionColors.grayMedium
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.XSmall))
+
+        Text(
+            text = "새로운 주문이 들어오면 여기에 표시됩니다",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.barrionColors.grayMedium
+        )
+    }
+}
+
+@Composable
+private fun OrderDeleteDialog(
+    orderNumber: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = modifier,
+        containerColor = MaterialTheme.barrionColors.white,
+        shape = RoundedCornerShape(CornerRadius.Large),
+        title = {
+            Text(
+                text = "${orderNumber}번을 취소처리 하시겠습니까?",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.barrionColors.grayBlack,
+                modifier = Modifier.padding(bottom = Spacing.Medium)
+            )
+        },
+        confirmButton = {
+            BarrionNavigationButtons(
+                leftText = "아니오",
+                rightText = "예",
+                onLeftClick = onDismiss,
+                onRightClick = onConfirm,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    )
 }

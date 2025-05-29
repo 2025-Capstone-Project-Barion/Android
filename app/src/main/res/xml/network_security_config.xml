@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 개발/테스트를 위한 HTTP 허용 설정 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- 백엔드 서버 IP 허용 -->
+        <domain includeSubdomains="false">13.209.99.95</domain>
+    </domain-config>
+
+    <!-- 로컬 개발 서버도 허용 (필요시) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

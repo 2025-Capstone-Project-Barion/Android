@@ -1,19 +1,25 @@
 package com.example.order.viewmodel
 
-// feature/order/src/main/java/com/barrion/feature/order/viewmodel/OrderViewModel.kt
-
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.order.type.Order
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import android.util.Log
+import com.example.domain.usecase.order.DeleteOrderUseCase
+import com.example.domain.usecase.order.GetAllOrdersUseCase
+import com.example.domain.usecase.order.GetOrderUseCase
 import com.example.order.type.OrderEffect
 import com.example.order.type.OrderIntent
 import com.example.order.type.OrderState
-import com.example.order.type.OrderStatus
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class OrderViewModel : ViewModel() {
+@HiltViewModel
+class OrderViewModel @Inject constructor(
+    private val getAllOrdersUseCase: GetAllOrdersUseCase,
+    private val deleteOrderUseCase: DeleteOrderUseCase,
+    private val getOrderUseCase: GetOrderUseCase
+) : ViewModel() {
 
     private val _state = MutableStateFlow(OrderState())
     val state: StateFlow<OrderState> = _state.asStateFlow()
@@ -21,72 +27,83 @@ class OrderViewModel : ViewModel() {
     private val _effect = MutableSharedFlow<OrderEffect>()
     val effect: SharedFlow<OrderEffect> = _effect.asSharedFlow()
 
+    // 현재 매장 ID (추후 설정 가능하도록)
+    private val currentStoreId = 0 // 임시값
+
     init {
+        Log.d("OrderViewModel", "🚀 ViewModel 초기화")
+        // 실제 API 호출
         handleIntent(OrderIntent.LoadOrders)
     }
 
     fun handleIntent(intent: OrderIntent) {
+        Log.d("OrderViewModel", "📩 Intent 수신: $intent")
+
         when (intent) {
             is OrderIntent.LoadOrders -> loadOrders()
-            is OrderIntent.RefreshOrders -> refreshOrders()
-            is OrderIntent.SelectOrder -> selectOrder(intent.orderId)
-            is OrderIntent.UpdateOrderStatus -> updateOrderStatus(intent.orderId, intent.status)
-            is OrderIntent.ClearError -> clearError()
+            is OrderIntent.DeleteOrder -> deleteOrder(intent.orderId)
+            is OrderIntent.RefreshData -> refreshData()
         }
     }
 
     private fun loadOrders() {
         viewModelScope.launch {
+            Log.d("OrderViewModel", "📋 주문 목록 로딩 시작 (매장 ID: $currentStoreId)")
             _state.value = _state.value.copy(isLoading = true, error = null)
 
-            try {
-                // 임시 데이터
-                val orders = getSampleOrders()
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    orders = orders
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = "주문 데이터를 불러올 수 없습니다"
-                )
-            }
-        }
-    }
+            getAllOrdersUseCase(currentStoreId)
+                .onSuccess { orders ->
+                    Log.d("OrderViewModel", "✅ 주문 목록 로딩 성공: ${orders.size}개")
 
-    private fun refreshOrders() = loadOrders()
+                    val newState = _state.value.copy(
+                        isLoading = false,
+                        orders = orders,
+                        error = null
+                    )
 
-    private fun selectOrder(orderId: String) {
-        val order = _state.value.orders.find { it.id == orderId }
-        _state.value = _state.value.copy(selectedOrder = order)
+                    // 요약 정보 자동 계산
+                    val summary = newState.calculateSummary()
 
-        viewModelScope.launch {
-            _effect.emit(OrderEffect.NavigateToOrderDetail(orderId))
-        }
-    }
+                    _state.value = newState.copy(summary = summary)
 
-    private fun updateOrderStatus(orderId: String, status: OrderStatus) {
-        _state.value = _state.value.copy(
-            orders = _state.value.orders.map { order ->
-                if (order.id == orderId) {
-                    order.copy(status = status)
-                } else {
-                    order
+                    Log.d("OrderViewModel", "📊 요약 정보 계산 완료: $summary")
                 }
-            }
-        )
-
-        viewModelScope.launch {
-            _effect.emit(OrderEffect.ShowToast("주문 상태가 업데이트되었습니다"))
+                .onFailure { error ->
+                    Log.e("OrderViewModel", "❌ 주문 목록 로딩 실패: ${error.message}")
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = error.message
+                    )
+                    _effect.emit(OrderEffect.ShowError("주문 목록을 불러올 수 없습니다"))
+                }
         }
     }
 
-    private fun clearError() {
-        _state.value = _state.value.copy(error = null)
+    private fun deleteOrder(orderId: Int) {
+        viewModelScope.launch {
+            Log.d("OrderViewModel", "🗑️ 주문 삭제 시작: ID $orderId")
+
+            deleteOrderUseCase(orderId)
+                .onSuccess {
+                    Log.d("OrderViewModel", "✅ 주문 삭제 성공: ID $orderId")
+                    _effect.emit(OrderEffect.ShowDeleteSuccess("주문이 삭제되었습니다"))
+                    // 삭제 후 데이터 새로고침
+                    refreshData()
+                }
+                .onFailure { error ->
+                    Log.e("OrderViewModel", "❌ 주문 삭제 실패: ${error.message}")
+                    _effect.emit(OrderEffect.ShowError("주문 삭제에 실패했습니다"))
+                }
+        }
     }
 
-    private fun getSampleOrders(): List<Order> {
-        return emptyList() // 일단 빈 리스트
+    private fun refreshData() {
+        Log.d("OrderViewModel", "🔄 데이터 새로고침")
+        loadOrders()
+    }
+
+    // 매장 ID 설정 함수 (추후 사용)
+    fun setStoreId(storeId: Int) {
+        // TODO: storeId 설정 후 데이터 새로고침
     }
 }

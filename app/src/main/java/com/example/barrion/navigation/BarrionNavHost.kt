@@ -1,4 +1,4 @@
-// app/src/main/java/com/example/barrion/navigation/BarrionNavHost.kt (최종 버전)
+// BarrionNavHost.kt - 메인 네비게이션 호스트 (수정된 버전)
 package com.example.barrion.navigation
 
 import androidx.compose.foundation.layout.Box
@@ -8,20 +8,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.barrion.navigation.HomeScreen
 import com.example.auth.screen.LoginScreen
 import com.example.auth.screen.WelcomeScreen
-import com.example.menu.screen.MenuScreen
+import com.example.menu.screen.AddMenuScreen
+import com.example.menu.screen.CategoryDetailScreen
+import com.example.menu.screen.CategoryManagementScreen
+import com.example.menu.screen.EditMenuScreen
+import com.example.menu.viewmodel.MenuViewModel
 import com.example.onboarding.presentation.OnboardingScreen
 import com.example.onboarding.presentation.SetupStoreInfoScreen
 import com.example.onboarding.presentation.SetupBusinessTypeScreen
 import com.example.onboarding.presentation.SetupKioskCategoryScreen
-import com.example.order.screen.OrderScreen
-import com.example.sales.screen.SalesScreen
-import com.example.staff.screen.StaffScreen
+import com.example.staff.screen.StaffDetailScreen
+import com.example.staff.screen.StaffEditScreen
 
 /**
  * 앱의 메인 네비게이션 호스트
@@ -113,26 +119,124 @@ fun BarrionNavHost(navController: NavHostController) {
             )
         }
 
-        // 홈 화면 - 바텀 네비게이션 포함
+        // ✅ 홈 화면 - 바텀 네비게이션 포함 (모든 탭은 여기서 관리)
         composable(route = NavRoutes.Home.route) {
-            HomeScreen()
+            HomeScreen(navController = navController)
         }
 
-        // 바텀 네비게이션 화면들
-        composable(route = NavRoutes.Menu.route) {
-            MenuScreen()
+        // ========== 메뉴 관리 상세 화면들 ==========
+        composable(route = NavRoutes.CategoryManagement.route) {
+            val viewModel: MenuViewModel = hiltViewModel()
+            CategoryManagementScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
 
-        composable(route = NavRoutes.Orders.route) {
-            OrderScreen()
+        composable(
+            route = NavRoutes.CategoryDetail.route,
+            arguments = listOf(
+                navArgument("categoryId") { type = NavType.LongType },
+                navArgument("categoryName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getLong("categoryId") ?: 0L
+            val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
+            val viewModel: MenuViewModel = hiltViewModel()
+
+            CategoryDetailScreen(
+                categoryId = categoryId,
+                categoryName = categoryName,
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAddMenu = { categoryId ->
+                    navController.navigate(NavRoutes.AddMenu.createRoute(categoryId))
+                },
+                onNavigateToEditMenu = { menuId ->
+                    navController.navigate(NavRoutes.EditMenu.createRoute(menuId))
+                }
+            )
         }
 
-        composable(route = NavRoutes.Sales.route) {
-            SalesScreen()
+        composable(
+            route = NavRoutes.AddMenu.route,
+            arguments = listOf(
+                navArgument("categoryId") {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                    nullable = false
+                }
+            )
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getLong("categoryId")?.takeIf { it != 0L }
+            val viewModel: MenuViewModel = hiltViewModel()
+
+            AddMenuScreen(
+                selectedCategoryId = categoryId,
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
 
-        composable(route = NavRoutes.Staff.route) {
-            StaffScreen()
+        composable(
+            route = NavRoutes.EditMenu.route,
+            arguments = listOf(
+                navArgument("menuId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val menuId = backStackEntry.arguments?.getLong("menuId") ?: 0L
+            val viewModel: MenuViewModel = hiltViewModel()
+
+            EditMenuScreen(
+                menuId = menuId,
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // ========== 직원 관리 상세 화면들 ==========
+
+        // ✅ Staff 상세 화면 - onEditClick 파라미터 제거
+        composable(
+            route = NavRoutes.StaffDetail.route,
+            arguments = listOf(navArgument("staffId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val staffId = backStackEntry.arguments?.getLong("staffId") ?: 0L
+            StaffDetailScreen(
+                staffId = staffId,
+                // ✅ onEditClick 파라미터 제거됨
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = NavRoutes.StaffEdit.route,
+            arguments = listOf(
+                navArgument("id") {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                    nullable = false
+                }
+            )
+        ) { backStackEntry ->
+            val staffId = backStackEntry.arguments?.getLong("id")?.takeIf { it != 0L }
+
+            StaffEditScreen(
+                staffId = staffId,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

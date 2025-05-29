@@ -70,6 +70,9 @@ android {
 dependencies {
     // 기존 의존성 유지
     implementation(project(":core:ui"))
+    implementation(project(":data"))
+    implementation(project(":domain"))
+    implementation(project(":core:common"))
     implementation(project(":presentation"))
     implementation(project(":feature:onboarding"))
     implementation(project(":feature:auth"))
@@ -80,6 +83,8 @@ dependencies {
 
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.navigation:navigation-compose:2.7.5")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
     implementation(libs.balloon)
     implementation(libs.core.splashscreen)
 

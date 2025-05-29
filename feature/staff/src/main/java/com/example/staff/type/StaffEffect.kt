@@ -1,7 +1,8 @@
 package com.example.staff.type
 
-sealed class StaffEffect {
-    data class ShowToast(val message: String) : StaffEffect()
-    data class NavigateToStaffDetail(val staffId: String) : StaffEffect()
-    object NavigateToStaffAdd : StaffEffect()
+sealed interface StaffEffect {
+    data class ShowToast(val message: String) : StaffEffect
+    data class NavigateToDetail(val id: Long) : StaffEffect
+    data object NavigateBack : StaffEffect
 }
+
