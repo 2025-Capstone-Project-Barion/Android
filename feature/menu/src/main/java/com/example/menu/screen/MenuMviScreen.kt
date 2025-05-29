@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,22 +41,47 @@ fun MenuMviScreen(
     var showDeleteMenuDialog by remember { mutableStateOf(false) }
     var menuToDelete by remember { mutableStateOf<com.example.domain.model.Menu?>(null) }
 
-    // Effect 처리
+    // Effect 처리 - 데이터 업데이트 감지 추가
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
+                // 네비게이션 Effect
                 is MenuEffect.NavigateToCategoryManagement -> onNavigateToCategoryManagement()
                 is MenuEffect.NavigateToAddMenu -> onNavigateToAddMenu()
                 is MenuEffect.NavigateToCategoryDetail -> {
                     onNavigateToCategoryDetail(effect.categoryId, effect.categoryName)
                 }
+
+                // 메뉴 관련 Effect - 데이터 새로고침 트리거
                 is MenuEffect.MenuDeletedSuccessfully -> {
                     showDeleteMenuDialog = false
                     menuToDelete = null
+                    // 자동으로 loadMenus()가 ViewModel에서 호출됨
                 }
+                is MenuEffect.MenuAddedSuccessfully -> {
+                    // 메뉴 추가 시 자동 새로고침 (ViewModel에서 처리)
+                }
+                is MenuEffect.MenuUpdatedSuccessfully -> {
+                    // 메뉴 수정 시 자동 새로고침 (ViewModel에서 처리)
+                }
+
+                // 카테고리 관련 Effect - 데이터 새로고침 트리거
+                is MenuEffect.CategoryAddedSuccessfully -> {
+                    // 카테고리 추가 시 자동 새로고침 (ViewModel에서 처리)
+                }
+                is MenuEffect.CategoryDeletedSuccessfully -> {
+                    // 카테고리 삭제 시 자동 새로고침 (ViewModel에서 처리)
+                }
+
                 else -> {}
             }
         }
+    }
+
+    // 화면이 다시 보여질 때 데이터 새로고침
+    LaunchedEffect(Unit) {
+        // 화면 진입 시 데이터 새로고침
+        viewModel.handleIntent(MenuIntent.RefreshData)
     }
 
     // UI 구성 - 헤더 위치 조정
@@ -83,6 +109,16 @@ fun MenuMviScreen(
                     }
                 },
                 actions = {
+                    // 새로고침 버튼 추가
+                    IconButton(
+                        onClick = { viewModel.handleIntent(MenuIntent.RefreshData) }
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "새로고침",
+                            tint = MaterialTheme.barrionColors.grayMedium
+                        )
+                    }
                     IconButton(
                         onClick = { viewModel.handleIntent(MenuIntent.NavigateToAddMenu) }
                     ) {

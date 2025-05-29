@@ -153,6 +153,7 @@ class MenuViewModel @Inject constructor(
         }
     }
 
+    // MenuViewModel.kt의 addMenu 함수 수정
     private fun addMenu(intent: MenuIntent.AddMenu) {
         viewModelScope.launch {
             println("📱 ViewModel - 메뉴 추가 요청")
@@ -166,6 +167,18 @@ class MenuViewModel @Inject constructor(
                 description = intent.description,
                 base64Image = intent.base64Image
             )
+                .onSuccess { menu ->
+                    println("✅ ViewModel - 메뉴 추가 성공: ${menu.name}")
+                    _effect.emit(MenuEffect.MenuAddedSuccessfully)
+                    _effect.emit(MenuEffect.ShowToast("메뉴가 추가되었습니다"))
+                    loadMenus() // 데이터 새로고침
+                }
+                .onFailure { exception ->
+                    println("❌ ViewModel - 메뉴 추가 실패: ${exception.message}")
+                    _effect.emit(MenuEffect.ShowError(
+                        exception.message ?: "메뉴 추가 중 오류가 발생했습니다"
+                    ))
+                }
         }
     }
 
